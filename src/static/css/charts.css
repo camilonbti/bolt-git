@@ -1,0 +1,97 @@
+/* Estilos para os gráficos */
+.chart-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
+    height: 100%;
+    transition: transform 0.2s ease;
+}
+
+.chart-card:hover {
+    transform: translateY(-3px);
+}
+
+.chart-card h5 {
+    color: var(--primary-color);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+/* Animações */
+@keyframes chartFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chart-container canvas {
+    animation: chartFadeIn 0.5s ease-out;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px;
+    }
+    
+    .chart-card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Tooltips personalizados */
+.chartjs-tooltip {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 3px;
+    padding: 6px;
+    font-size: 12px;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Scrollbar personalizada para legendas */
+.chart-legend-scroll {
+    max-height: 100px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) var(--light-bg);
+}
+
+.chart-legend-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chart-legend-scroll::-webkit-scrollbar-track {
+    background: var(--light-bg);
+}
+
+.chart-legend-scroll::-webkit-scrollbar-thumb {
+    background-color: var(--primary-color);
+    border-radius: 3px;
+}
+
+/* Hover effects */
+.chart-container:hover {
+    cursor: pointer;
+}
+
+.chart-container:hover canvas {
+    filter: brightness(0.98);
+}

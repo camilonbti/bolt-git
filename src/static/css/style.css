@@ -1,0 +1,71 @@
+/* Estilos globais */
+:root {
+    --primary-color: #4e73df;
+    --success-color: #1cc88a;
+    --info-color: #36b9cc;
+    --warning-color: #f6c23e;
+    --danger-color: #e74a3b;
+    --secondary-color: #858796;
+    --light-bg: #f8f9fc;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background-color: var(--light-bg);
+    margin: 0;
+    padding: 20px;
+}
+
+/* KPI Cards */
+.kpi-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
+    transition: transform 0.2s;
+}
+
+.kpi-card:hover {
+    transform: translateY(-3px);
+}
+
+.kpi-card h6 {
+    color: var(--primary-color);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.kpi-card p {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0;
+    color: #5a5c69;
+}
+
+/* Botões */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .kpi-card {
+        margin-bottom: 1rem;
+    }
+
+    .kpi-card p {
+        font-size: 1.5rem;
+    }
+}

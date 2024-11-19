@@ -1,0 +1,29 @@
+{% if pagination %}
+<div class="pagination">
+    {% if pagination.current_page > 1 %}
+    <a href="?page={{ pagination.current_page - 1 }}" class="btn btn-primary">&laquo; Anterior</a>
+    {% endif %}
+
+    {% for page in pagination.pagination_range %}
+        {% if page == "..." %}
+        <span class="pagination-ellipsis">...</span>
+        {% else %}
+        <a href="?page={{ page }}" 
+           class="btn btn-{{ 'secondary' if page == pagination.current_page else 'primary' }}">
+            {{ page }}
+        </a>
+        {% endif %}
+    {% endfor %}
+
+    {% if pagination.current_page < pagination.total_pages %}
+    <a href="?page={{ pagination.current_page + 1 }}" class="btn btn-primary">Próxima &raquo;</a>
+    {% endif %}
+</div>
+
+<div class="pagination-info">
+    <small>
+        Mostrando {{ pagination.start + 1 }} a {{ pagination.end }} 
+        de {{ pagination.total }} registros
+    </small>
+</div>
+{% endif %}

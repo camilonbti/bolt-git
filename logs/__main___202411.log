@@ -1,0 +1,45 @@
+[2024-11-18 22:18:29] INFO     [__main__:index:34] Iniciando carregamento do dashboard
+[2024-11-18 22:18:30] INFO     [__main__:index:41] Dados obtidos: 466 linhas
+[2024-11-18 22:18:30] INFO     [__main__:index:51] Dashboard processado com sucesso
+[2024-11-18 22:19:28] INFO     [__main__:index:34] Iniciando carregamento do dashboard
+[2024-11-18 22:19:28] ERROR    [__main__:index:55] Erro ao renderizar dashboard: Arquivo de credenciais não encontrado: /Users/camilo/projetos_vs/bolt_git/credentials.json
+Traceback (most recent call last):
+  File "/Users/camilo/projetos_vs/bolt_git/src/core/sheets_client.py", line 23, in _get_credentials
+    credentials = service_account.Credentials.from_service_account_file(
+  File "/Users/camilo/Library/Python/3.9/lib/python/site-packages/google/oauth2/service_account.py", line 260, in from_service_account_file
+    info, signer = _service_account_info.from_filename(
+  File "/Users/camilo/Library/Python/3.9/lib/python/site-packages/google/auth/_service_account_info.py", line 78, in from_filename
+    with io.open(filename, "r", encoding="utf-8") as json_file:
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/camilo/projetos_vs/bolt_git/credentials.json'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/camilo/projetos_vs/bolt_git/app.py", line 37, in index
+    sheets_client = GoogleSheetsClient()
+  File "/Users/camilo/projetos_vs/bolt_git/src/core/sheets_client.py", line 14, in __init__
+    self.credentials = self._get_credentials()
+  File "/Users/camilo/projetos_vs/bolt_git/src/core/sheets_client.py", line 32, in _get_credentials
+    raise FileNotFoundError(error_msg)
+FileNotFoundError: Arquivo de credenciais não encontrado: /Users/camilo/projetos_vs/bolt_git/credentials.json
+[2024-11-18 22:19:32] INFO     [__main__:index:34] Iniciando carregamento do dashboard
+[2024-11-18 22:19:32] ERROR    [__main__:index:55] Erro ao renderizar dashboard: Arquivo de credenciais não encontrado: /Users/camilo/projetos_vs/bolt_git/credentials.json
+Traceback (most recent call last):
+  File "/Users/camilo/projetos_vs/bolt_git/src/core/sheets_client.py", line 23, in _get_credentials
+    credentials = service_account.Credentials.from_service_account_file(
+  File "/Users/camilo/Library/Python/3.9/lib/python/site-packages/google/oauth2/service_account.py", line 260, in from_service_account_file
+    info, signer = _service_account_info.from_filename(
+  File "/Users/camilo/Library/Python/3.9/lib/python/site-packages/google/auth/_service_account_info.py", line 78, in from_filename
+    with io.open(filename, "r", encoding="utf-8") as json_file:
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/camilo/projetos_vs/bolt_git/credentials.json'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/camilo/projetos_vs/bolt_git/app.py", line 37, in index
+    sheets_client = GoogleSheetsClient()
+  File "/Users/camilo/projetos_vs/bolt_git/src/core/sheets_client.py", line 14, in __init__
+    self.credentials = self._get_credentials()
+  File "/Users/camilo/projetos_vs/bolt_git/src/core/sheets_client.py", line 32, in _get_credentials
+    raise FileNotFoundError(error_msg)
+FileNotFoundError: Arquivo de credenciais não encontrado: /Users/camilo/projetos_vs/bolt_git/credentials.json
