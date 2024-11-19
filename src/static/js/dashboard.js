@@ -4,8 +4,14 @@ class DashboardManager {
         this.dataManager = new DashboardDataManager();
         this.chartManager = new ChartManager();
         this.filterManager = new FilterManager();
-        this.tableManager = new TableManager();
-        
+
+        // Garantindo que TableManager seja inicializado
+        if (window.TableManager) {
+            this.tableManager = new TableManager();
+        } else {
+            console.error('TableManager não definido. Verifique o carregamento do arquivo table.js.');
+        }
+
         this.setupEventListeners();
         this.loadInitialData();
     }
@@ -28,7 +34,6 @@ class DashboardManager {
             exportBtn.addEventListener('click', () => this.exportData());
         }
 
-        // Listener para limpar período
         const clearPeriodBtn = document.getElementById('clearPeriod');
         if (clearPeriodBtn) {
             clearPeriodBtn.addEventListener('click', () => {
@@ -55,7 +60,9 @@ class DashboardManager {
 
             this.updateKPIs(data.kpis || {});
             this.chartManager.updateCharts(data.graficos || {});
-            this.tableManager.updateTable(data.registros || []);
+            if (this.tableManager) {
+                this.tableManager.updateTable(data.registros || []);
+            }
             this.updateTimestamp(data.ultima_atualizacao);
             
             console.info('Dashboard atualizado com sucesso:', {
@@ -170,11 +177,9 @@ class DashboardManager {
 
     showSuccess(message) {
         console.info(message);
-        // TODO: Implementar toast ou alert bootstrap
     }
 
     showError(message) {
         console.error(message);
-        // TODO: Implementar toast ou alert bootstrap
     }
 }

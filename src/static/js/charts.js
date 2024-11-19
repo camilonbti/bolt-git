@@ -161,8 +161,8 @@ class ChartManager {
     initChart(type, chartType, options, customColors = null) {
         const ctx = document.getElementById(`${type}Chart`)?.getContext('2d');
         if (!ctx) {
-            console.warn(`Elemento ${type}Chart não encontrado`);
-            return;
+            console.warn(`Elemento ${type}Chart não encontrado. Verifique se o elemento está presente no HTML.`);
+            return; // Não tentar inicializar o gráfico se o elemento não existe
         }
 
         const colors = customColors || this.colorPalette.getChartColors(10);

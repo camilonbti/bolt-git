@@ -14,13 +14,11 @@ class FilterManager {
     }
 
     setupEventListeners() {
-        // Listener para cliques nos gráficos
         document.addEventListener('chartClick', (event) => {
             console.debug('Clique no gráfico:', event.detail);
             this.toggleFilter(event.detail.type, event.detail.value);
         });
 
-        // Listener para mudanças nos campos de data
         const startDate = document.getElementById('startDate');
         const endDate = document.getElementById('endDate');
 
@@ -45,21 +43,23 @@ class FilterManager {
     }
 
     getDateWithMinTime(dateStr) {
-        const date = new Date(dateStr);
-        date.setHours(0, 0, 0, 0);
+        // Cria data com horário inicial do dia (00:00:00)
+        const date = new Date(dateStr + 'T00:00:00-03:00'); // GMT-3 (Brasília)
         return date.toISOString();
     }
 
     getDateWithMaxTime(dateStr) {
-        const date = new Date(dateStr);
-        date.setHours(23, 59, 59, 999);
+        // Cria data com horário final do dia (23:59:59)
+        const date = new Date(dateStr + 'T23:59:59-03:00'); // GMT-3 (Brasília)
         return date.toISOString();
     }
 
     initializeDateFields() {
         try {
-            const today = new Date();
-            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const brasiliaOffset = -180; // GMT-3 em minutos
+            const now = new Date();
+            const brasiliaTime = new Date(now.getTime() + (now.getTimezoneOffset() + brasiliaOffset) * 60000);
+            const firstDayOfMonth = new Date(brasiliaTime.getFullYear(), brasiliaTime.getMonth(), 1);
             
             const startDateInput = document.getElementById('startDate');
             const endDateInput = document.getElementById('endDate');
@@ -70,9 +70,8 @@ class FilterManager {
             }
             
             startDateInput.value = this.formatDateForInput(firstDayOfMonth);
-            endDateInput.value = this.formatDateForInput(today);
+            endDateInput.value = this.formatDateForInput(brasiliaTime);
             
-            // Aplica o filtro inicial de período
             this.toggleFilter('period', {
                 start: this.getDateWithMinTime(startDateInput.value),
                 end: this.getDateWithMaxTime(endDateInput.value)
@@ -89,7 +88,10 @@ class FilterManager {
 
     formatDateForInput(date) {
         try {
-            return date.toISOString().split('T')[0];
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         } catch (error) {
             console.error('Erro ao formatar data para input:', error);
             return '';
@@ -99,7 +101,9 @@ class FilterManager {
     formatDateForDisplay(dateStr) {
         try {
             const date = new Date(dateStr);
-            return date.toLocaleDateString('pt-BR');
+            return date.toLocaleDateString('pt-BR', {
+                timeZone: 'America/Sao_Paulo'
+            });
         } catch (error) {
             console.error('Erro ao formatar data para exibição:', error);
             return dateStr;
@@ -108,10 +112,13 @@ class FilterManager {
 
     validateDates(startDate, endDate) {
         try {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            const today = new Date();
-            today.setHours(23, 59, 59, 999);
+            const start = new Date(startDate + 'T00:00:00-03:00');
+            const end = new Date(endDate + 'T23:59:59-03:00');
+
+            // Ajustando a data de hoje para o fuso horário de Brasília (GMT-3)
+            const now = new Date();
+            const brasiliaOffset = -180; // GMT-3 em minutos
+            const today = new Date(now.getTime() + (now.getTimezoneOffset() + brasiliaOffset) * 60000);
 
             if (isNaN(start.getTime()) || isNaN(end.getTime())) {
                 this.showError('Data inválida');
@@ -139,10 +146,8 @@ class FilterManager {
         console.debug(`Alternando filtro: ${type} = ${JSON.stringify(value)}`);
 
         if (type === 'period') {
-            // Para período, sempre substituímos o valor atual
             this.filters.set(type, value);
         } else {
-            // Para outros filtros, alternamos a presença do valor
             if (!this.filters.has(type)) {
                 this.filters.set(type, new Set());
             }
@@ -163,19 +168,10 @@ class FilterManager {
         this.notifyFilterChange();
     }
 
-    clearFilters() {
-        console.debug('Limpando todos os filtros');
-        this.filters.clear();
-        this.initializeDateFields(); // Reaplica o filtro de período padrão
-        this.updateUI();
-        this.notifyFilterChange();
-    }
-
     updateUI() {
         this.filterContainer.innerHTML = '';
         let totalFiltros = 0;
         
-        // Primeiro, adiciona o filtro de período se existir
         const periodFilter = this.filters.get('period');
         if (periodFilter) {
             totalFiltros++;
@@ -183,7 +179,6 @@ class FilterManager {
             this.filterContainer.appendChild(filterItem);
         }
         
-        // Depois, adiciona os demais filtros
         this.filters.forEach((values, type) => {
             if (type !== 'period') {
                 values.forEach(value => {
@@ -194,7 +189,6 @@ class FilterManager {
             }
         });
 
-        // Adiciona o botão de limpar filtros
         const clearBtn = document.createElement('button');
         clearBtn.className = 'btn btn-sm btn-outline-secondary ms-2';
         clearBtn.innerHTML = '<i class="fas fa-times me-1"></i>Limpar Filtros';
@@ -206,10 +200,8 @@ class FilterManager {
             noFilters.className = 'no-filters';
             noFilters.textContent = 'Nenhum filtro aplicado';
             this.filterContainer.appendChild(noFilters);
-            this.initializeDateFields(); // Reaplica o filtro de período padrão
+            this.initializeDateFields();
         }
-
-        console.info(`Total de filtros ativos: ${totalFiltros}`);
     }
 
     createPeriodFilterItem(period) {
@@ -228,7 +220,7 @@ class FilterManager {
         removeBtn.innerHTML = '<i class="fas fa-times"></i>';
         removeBtn.onclick = (e) => {
             e.stopPropagation();
-            this.initializeDateFields(); // Reaplica o filtro de período padrão
+            this.initializeDateFields();
         };
 
         item.appendChild(label);
@@ -291,7 +283,14 @@ class FilterManager {
 
     showError(message) {
         console.error(message);
-        // TODO: Implementar um sistema de notificação mais elegante
         alert(message);
+    }
+
+    clearFilters() {
+        console.debug('Limpando todos os filtros');
+        this.filters.clear();
+        this.initializeDateFields();
+        this.updateUI();
+        this.notifyFilterChange();
     }
 }
