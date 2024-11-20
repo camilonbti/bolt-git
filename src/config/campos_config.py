@@ -30,7 +30,7 @@ MAPEAMENTO_COLUNAS = {
     'Empresa atendida:': 'cliente',
     'Nome do solicitante:': 'solicitante',
     'Relato do pedido de atendimento:': 'solicitacao_cliente',
-    'Relato mais detalhado do pedido do cliente:': 'descricao_atendimento',
+    'Descrição do atendimento realizado:': 'descricao_atendimento',
     'Status do atendimento:': 'status_atendimento',
     'Tipo do atendimento solicitado:': 'tipo_atendimento',
     'Sistema do cliente:': 'sistema',
@@ -44,7 +44,7 @@ VALORES_DEFAULT = {
     'cliente': 'Não informado',
     'solicitante': 'Não informado',
     'solicitacao_cliente': 'Sem relato',
-    'descricao_atendimento': 'Sem descrição detalhada',
+    'descricao_atendimento': 'Sem descrição',
     'status_atendimento': 'Pendente',
     'tipo_atendimento': 'Não categorizado',
     'sistema': 'Não especificado',
@@ -104,13 +104,13 @@ CAMPOS_CONFIGURACAO = {
         "label": "Relato",
         "visivel": True
     },
-    "Relato mais detalhado do pedido do cliente:": {
+    "Descrição do atendimento realizado:": {
         "nome_interno": "descricao_atendimento",
         "tipo": "string",
         "obrigatorio": False,
         "valor_default": VALORES_DEFAULT['descricao_atendimento'],
         "permite_filtro": False,
-        "label": "Descrição Detalhada",
+        "label": "Descrição",
         "visivel": True
     },
     "Status do atendimento:": {

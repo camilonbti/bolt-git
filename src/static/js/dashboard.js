@@ -82,7 +82,6 @@ class DashboardManager {
                 elements.totalConcluidos.textContent = Number(kpis.total_concluidos || 0).toLocaleString();
             }
             if (elements.taxaConclusao) {
-                // Garante que taxa_conclusao seja tratada como número
                 const taxa = Number(kpis.taxa_conclusao || 0);
                 elements.taxaConclusao.textContent = `${taxa.toFixed(1)}%`;
             }
@@ -95,7 +94,7 @@ class DashboardManager {
         const element = document.getElementById('lastUpdate');
         if (element && timestamp) {
             try {
-                // Converte para timezone local (Brasil)
+                // Converte timestamp para data local considerando timezone do Brasil
                 const date = new Date(timestamp);
                 const options = {
                     timeZone: this.timezone,
@@ -110,7 +109,7 @@ class DashboardManager {
                 element.textContent = new Intl.DateTimeFormat('pt-BR', options).format(date);
             } catch (error) {
                 console.error('Erro ao formatar timestamp:', error);
-                element.textContent = timestamp;
+                element.textContent = 'Data inválida';
             }
         }
     }

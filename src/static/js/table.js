@@ -7,15 +7,15 @@ class TableManager {
         this.timezone = 'America/Sao_Paulo';
         
         if (!this.table) {
-            console.warn('Elemento da tabela não encontrado');
+            console.error('Elemento da tabela não encontrado. ID esperado: tableBody');
             return;
         }
 
+        console.info('TableManager inicializado com sucesso');
         this.setupEventListeners();
     }
 
     setupEventListeners() {
-        // Delegação de eventos para descrições expandíveis
         this.table.addEventListener('click', (e) => {
             if (e.target.classList.contains('description-toggle')) {
                 const content = e.target.previousElementSibling;
@@ -24,48 +24,43 @@ class TableManager {
             }
         });
 
-        // Listener para mudança de página
         document.addEventListener('pageChange', () => {
+            console.debug('Evento pageChange recebido');
             const data = window.dashboardManager?.dataManager?.data?.registros || [];
             this.updateTable(data);
         });
 
-        // Listener para atualização do dashboard
         document.addEventListener('dashboardUpdate', (event) => {
+            console.debug('Evento dashboardUpdate recebido');
             if (event.detail && Array.isArray(event.detail.registros)) {
                 this.updateTable(event.detail.registros);
             }
         });
     }
 
-    formatDate(dateStr) {
+    formatDateTime(dateStr) {
         if (!dateStr) return { date: 'N/A', time: '' };
         
         try {
             const date = new Date(dateStr);
             if (isNaN(date.getTime())) return { date: 'Data inválida', time: '' };
 
-            // Formata data considerando timezone
-            const options = { 
-                timeZone: this.timezone,
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            };
-            
-            const timeOptions = {
-                timeZone: this.timezone,
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            };
-            
             return {
-                date: new Intl.DateTimeFormat('pt-BR', options).format(date),
-                time: new Intl.DateTimeFormat('pt-BR', timeOptions).format(date)
+                date: date.toLocaleDateString('pt-BR', {
+                    timeZone: this.timezone,
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                }),
+                time: date.toLocaleTimeString('pt-BR', {
+                    timeZone: this.timezone,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                })
             };
-        } catch (e) {
-            console.error('Erro ao formatar data:', e);
+        } catch (error) {
+            console.error('Erro ao formatar data:', error);
             return { date: 'Data inválida', time: '' };
         }
     }
@@ -82,52 +77,57 @@ class TableManager {
 
     updateTable(data) {
         if (!this.table || !Array.isArray(data)) {
-            console.warn('Dados inválidos ou elemento da tabela não encontrado');
+            console.error('Falha ao atualizar tabela:', {
+                tableExists: !!this.table,
+                dataIsArray: Array.isArray(data)
+            });
             return;
         }
-        
-        console.debug('Atualizando tabela com', data.length, 'registros');
         
         const start = (this.currentPage - 1) * this.itemsPerPage;
         const end = start + this.itemsPerPage;
         const pageData = data.slice(start, end);
 
-        this.table.innerHTML = pageData.map(item => {
-            const datetime = this.formatDate(item.data_hora);
-            const statusClass = this.getStatusClass(item.status_atendimento);
+        try {
+            this.table.innerHTML = pageData.map(item => {
+                const datetime = this.formatDateTime(item.data_hora);
+                const statusClass = this.getStatusClass(item.status_atendimento);
 
-            return `
-                <tr>
-                    <td class="datetime-cell">
-                        <span class="date">${datetime.date}</span>
-                        <span class="time">${datetime.time}</span>
-                    </td>
-                    <td class="entity-cell">
-                        <span class="entity-name">${item.cliente || 'N/A'}</span>
-                        <span class="entity-detail">${item.solicitante || 'Não informado'}</span>
-                    </td>
-                    <td class="entity-cell">
-                        <span class="entity-name">${item.funcionario || 'N/A'}</span>
-                    </td>
-                    <td>
-                        <span class="status-badge ${statusClass}">
-                            ${item.status_atendimento || 'N/A'}
-                        </span>
-                    </td>
-                    <td>${item.tipo_atendimento || 'N/A'}</td>
-                    <td>${item.sistema || 'N/A'}</td>
-                    <td>${item.canal_atendimento || 'N/A'}</td>
-                    <td class="description-cell">
-                        <div class="description-content">
-                            ${item.solicitacao_cliente || 'Sem descrição'}
-                        </div>
-                        <span class="description-toggle">Ver mais</span>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+                return `
+                    <tr>
+                        <td class="datetime-cell">
+                            <span class="date">${datetime.date}</span>
+                            <span class="time">${datetime.time}</span>
+                        </td>
+                        <td class="entity-cell">
+                            <span class="entity-name">${item.cliente || 'N/A'}</span>
+                            <span class="entity-detail">${item.solicitante || 'Não informado'}</span>
+                        </td>
+                        <td class="entity-cell">
+                            <span class="entity-name">${item.funcionario || 'N/A'}</span>
+                        </td>
+                        <td>
+                            <span class="status-badge ${statusClass}">
+                                ${item.status_atendimento || 'N/A'}
+                            </span>
+                        </td>
+                        <td>${item.tipo_atendimento || 'N/A'}</td>
+                        <td>${item.sistema || 'N/A'}</td>
+                        <td>${item.canal_atendimento || 'N/A'}</td>
+                        <td class="description-cell">
+                            <div class="description-content">
+                                ${item.descricao_atendimento || 'Sem descrição'}
+                            </div>
+                            <span class="description-toggle">Ver mais</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
 
-        this.updatePagination(data.length);
+            this.updatePagination(data.length);
+        } catch (error) {
+            console.error('Erro ao renderizar tabela:', error);
+        }
     }
 
     updatePagination(totalItems) {
@@ -186,15 +186,7 @@ class TableManager {
             return [1, '...', total - 3, total - 2, total - 1, total];
         }
 
-        return [
-            1,
-            '...',
-            current - 1,
-            current,
-            current + 1,
-            '...',
-            total
-        ];
+        return [1, '...', current - 1, current, current + 1, '...', total];
     }
 
     setupPaginationListeners(totalPages) {
