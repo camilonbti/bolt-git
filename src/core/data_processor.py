@@ -23,6 +23,8 @@ class ProcessadorDados:
         Retorna uma string com o array JavaScript formatado.
         """
         try:
+            logger.info("Iniciando formatação do dataset JS")
+            
             if not dados_brutos or len(dados_brutos) < 2:
                 logger.warning("Dados brutos vazios ou insuficientes")
                 return "const ATENDIMENTOS_DATASET = [];"
@@ -30,13 +32,16 @@ class ProcessadorDados:
             # Processa os dados
             df = self._criar_dataframe(dados_brutos)
             if df.empty:
+                logger.warning("DataFrame vazio após criação")
                 return "const ATENDIMENTOS_DATASET = [];"
 
             # Processa os campos
+            logger.debug("Processando campos do DataFrame")
             df = self._processar_campos(df)
             df = self._processar_datas(df)
 
             # Converte para o formato desejado
+            logger.debug("Convertendo dados para formato JSON")
             registros = []
             for _, row in df.iterrows():
                 registro = {
@@ -48,31 +53,51 @@ class ProcessadorDados:
                     'status_atendimento': self._formatar_texto(row['status_atendimento']),
                     'sistema': self._formatar_texto(row['sistema']),
                     'canal_atendimento': self._formatar_texto(row['canal_atendimento']),
-                    'descricao_realizado': self._formatar_texto(row['descricao_realizado'])
+                    'descricao_realizado': self._formatar_texto(row.get('descricao_atendimento', ''))
                 }
                 registros.append(registro)
 
-            # Formata como string JavaScript
-            js_array = json.dumps(registros, ensure_ascii=False, indent=2)
-            return f"const ATENDIMENTOS_DATASET = {js_array};"
+            logger.info(f"Dataset formatado com {len(registros)} registros")
+            
+            # Formata como string JavaScript com indentação para legibilidade
+            dataset_js = json.dumps(registros, ensure_ascii=False, indent=2)
+            return f"const ATENDIMENTOS_DATASET = {dataset_js};"
 
         except Exception as e:
             logger.error(f"Erro ao formatar dataset: {str(e)}", exc_info=True)
             return "const ATENDIMENTOS_DATASET = [];"
 
-    def processar_template(self, template_html: str, dados_brutos: List[List]) -> str:
-        """
-        Processa o template HTML substituindo o dataset vazio pelo formatado.
-        """
+    def processar_dados(self, dados_brutos: List[List]) -> Dict[str, Any]:
+        """Processa dados brutos com validação."""
         try:
-            dataset_js = self.formatar_dataset_js(dados_brutos)
-            return template_html.replace(
-                "const ATENDIMENTOS_DATASET = [];",
-                dataset_js
-            )
+            if not dados_brutos or len(dados_brutos) < 2:
+                logger.warning("Dados brutos vazios ou insuficientes")
+                return self._get_estrutura_vazia()
+                
+            df = self._criar_dataframe(dados_brutos)
+            if df.empty:
+                return self._get_estrutura_vazia()
+            
+            df = self._processar_campos(df)
+            df = self._processar_datas(df)
+            
+            metricas = self._calcular_metricas(df)
+            graficos = self._gerar_dados_graficos(df)
+            registros = df.to_dict('records')
+            
+            resultado = {
+                'kpis': metricas,
+                'graficos': graficos,
+                'registros': registros,
+                'ultima_atualizacao': datetime.now(self.timezone).strftime('%d/%m/%Y %H:%M:%S')
+            }
+            
+            logger.info(f"Dados processados: {len(registros)} registros")
+            return resultado
+            
         except Exception as e:
-            logger.error(f"Erro ao processar template: {str(e)}", exc_info=True)
-            return template_html
+            logger.error(f"Erro ao processar dados: {str(e)}", exc_info=True)
+            return self._get_estrutura_vazia()
 
     def _criar_dataframe(self, dados_brutos: List[List]) -> pd.DataFrame:
         """Cria DataFrame a partir dos dados brutos."""
@@ -87,7 +112,7 @@ class ProcessadorDados:
                 'Empresa atendida:': 'cliente',
                 'Nome do solicitante:': 'solicitante',
                 'Relato do pedido de atendimento:': 'solicitacao_cliente',
-                'Descrição do atendimento realizado:': 'descricao_realizado',
+                'Descrição do atendimento realizado:': 'descricao_atendimento',
                 'Status do atendimento:': 'status_atendimento',
                 'Tipo do atendimento solicitado:': 'tipo_atendimento',
                 'Sistema do cliente:': 'sistema',
@@ -99,6 +124,7 @@ class ProcessadorDados:
             
             logger.debug(f"DataFrame criado com {len(df)} linhas")
             return df
+            
         except Exception as e:
             logger.error(f"Erro ao criar DataFrame: {str(e)}")
             return pd.DataFrame()
@@ -112,7 +138,7 @@ class ProcessadorDados:
                 'cliente': 'Não informado',
                 'solicitante': 'Não informado',
                 'solicitacao_cliente': 'Não informado',
-                'descricao_realizado': 'Sem descrição',
+                'descricao_atendimento': 'Sem descrição',
                 'status_atendimento': 'Pendente',
                 'tipo_atendimento': 'Não categorizado',
                 'sistema': 'Não especificado',
@@ -182,6 +208,121 @@ class ProcessadorDados:
         except Exception as e:
             logger.error(f"Erro ao processar datas: {str(e)}")
             return df
+
+    def _calcular_metricas(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Calcula KPIs principais do dashboard."""
+        try:
+            total_registros = len(df)
+            
+            if total_registros == 0:
+                return self._get_kpis_vazios()
+
+            # Status
+            status_config = self.config["Status do atendimento:"]
+            concluidos = df[df[status_config["nome_interno"]] == "Concluído"].shape[0]
+            taxa_conclusao = (concluidos / total_registros * 100)
+            
+            # Tempo médio
+            tempo_medio = 0
+            try:
+                tempo_medio = df.groupby('funcionario')['data_hora'].agg(
+                    lambda x: (x.max() - x.min()).total_seconds() / 60
+                ).mean()
+            except:
+                logger.warning("Erro ao calcular tempo médio")
+
+            return {
+                'total_registros': total_registros,
+                'taxa_conclusao': round(taxa_conclusao, 1),
+                'tempo_medio': round(float(tempo_medio if pd.notnull(tempo_medio) else 0), 1),
+                'total_pendentes': total_registros - concluidos
+            }
+            
+        except Exception as e:
+            logger.error(f"Erro ao calcular KPIs: {str(e)}")
+            return self._get_kpis_vazios()
+
+    def _gerar_dados_graficos(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Gera dados para todos os gráficos do dashboard."""
+        try:
+            graficos = {
+                'status': self._contar_por_coluna(df, 'status_atendimento'),
+                'tipo': self._contar_por_coluna(df, 'tipo_atendimento', 10),
+                'funcionario': self._contar_por_coluna(df, 'funcionario', 10),
+                'cliente': self._contar_por_coluna(df, 'cliente', 10),
+                'sistema': self._contar_por_coluna(df, 'sistema', 10),
+                'canal': self._contar_por_coluna(df, 'canal_atendimento'),
+                'timeline': self._gerar_timeline(df)
+            }
+            
+            logger.debug("Dados dos gráficos gerados com sucesso")
+            return graficos
+            
+        except Exception as e:
+            logger.error(f"Erro ao gerar dados dos gráficos: {str(e)}")
+            return self._get_graficos_vazios()
+
+    def _contar_por_coluna(self, df: pd.DataFrame, coluna: str, limite: int = None) -> Dict[str, List]:
+        """Conta ocorrências em uma coluna."""
+        try:
+            if coluna not in df.columns:
+                logger.warning(f"Coluna {coluna} não encontrada no DataFrame")
+                return {'labels': [], 'values': []}
+                
+            contagem = df[coluna].value_counts()
+            if limite:
+                contagem = contagem.head(limite)
+                
+            return {
+                'labels': contagem.index.tolist(),
+                'values': contagem.values.tolist()
+            }
+        except Exception as e:
+            logger.error(f"Erro ao contar valores da coluna {coluna}: {str(e)}")
+            return {'labels': [], 'values': []}
+
+    def _gerar_timeline(self, df: pd.DataFrame) -> Dict[str, List]:
+        """Gera dados para o gráfico de timeline."""
+        try:
+            df['data'] = df['data_hora'].dt.tz_convert(self.timezone).dt.date
+            contagem_diaria = df.groupby('data').size()
+            return {
+                'labels': [d.strftime('%d/%m/%Y') for d in contagem_diaria.index],
+                'values': contagem_diaria.values.tolist()
+            }
+        except Exception as e:
+            logger.error(f"Erro ao gerar timeline: {str(e)}")
+            return {'labels': [], 'values': []}
+
+    def _get_estrutura_vazia(self) -> Dict[str, Any]:
+        """Retorna estrutura vazia do dashboard."""
+        return {
+            'kpis': self._get_kpis_vazios(),
+            'graficos': self._get_graficos_vazios(),
+            'registros': [],
+            'ultima_atualizacao': datetime.now(self.timezone).strftime('%d/%m/%Y %H:%M:%S')
+        }
+
+    def _get_kpis_vazios(self) -> Dict[str, Any]:
+        """Retorna estrutura vazia de KPIs."""
+        return {
+            'total_registros': 0,
+            'taxa_conclusao': 0.0,
+            'tempo_medio': 0.0,
+            'total_pendentes': 0
+        }
+
+    def _get_graficos_vazios(self) -> Dict[str, Any]:
+        """Retorna estrutura vazia de gráficos."""
+        return {
+            'status': {'labels': [], 'values': []},
+            'tipo': {'labels': [], 'values': []},
+            'funcionario': {'labels': [], 'values': []},
+            'cliente': {'labels': [], 'values': []},
+            'sistema': {'labels': [], 'values': []},
+            'canal': {'labels': [], 'values': []},
+            'timeline': {'labels': [], 'values': []}
+        }
 
     def _formatar_texto(self, valor: Any) -> str:
         """Formata valores de texto removendo espaços extras e normalizando."""

@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from src.core.sheets_client import GoogleSheetsClient
 from src.core.data_processor import ProcessadorDados
 from src.config.campos_config import CAMPOS_CONFIGURACAO
@@ -26,15 +26,13 @@ def index():
         dados_brutos = sheets_client.ler_planilha()
         logger.info(f"Dados obtidos: {len(dados_brutos)} linhas")
         
-        # Lê o template
-        template_path = os.path.join(app.template_folder, 'dashboard.html')
-        with open(template_path, 'r', encoding='utf-8') as f:
-            template_html = f.read()
+        # Processa os dados e formata para JavaScript
+        dados_processados = processador.processar_dados(dados_brutos)
+        dataset_js = f"const ATENDIMENTOS_DATASET = {dados_processados['registros']};"
+        logger.info("Dataset JS formatado com sucesso")
         
-        # Processa o template com os dados
-        html_processado = processador.formatar_dataset_js(dados_brutos)
-        
-        return render_template('dashboard.html', dataset_js=html_processado)
+        # Renderiza o template com o dataset
+        return render_template('dashboard.html', dataset_js=dataset_js)
         
     except Exception as e:
         logger.error(f"Erro ao renderizar dashboard: {str(e)}", exc_info=True)
@@ -53,14 +51,18 @@ def get_data():
         dados_brutos = sheets_client.ler_planilha()
         logger.debug(f"Dados brutos obtidos: {len(dados_brutos)} linhas")
         
-        # Formata os dados para JavaScript
-        dataset_js = processador.formatar_dataset_js(dados_brutos)
+        # Processa os dados
+        dados_processados = processador.processar_dados(dados_brutos)
+        logger.info("Dados processados com sucesso")
         
-        return dataset_js
+        return jsonify(dados_processados)
         
     except Exception as e:
-        logger.error(f"Erro ao buscar dados: {str(e)}", exc_info=True)
-        return {"error": True, "message": str(e) if app.debug else "Erro ao atualizar dados"}, 500
+        logger.error(f"Erro ao buscar dados: {str(e)}")
+        return jsonify({
+            "error": True, 
+            "message": str(e) if app.debug else "Erro ao atualizar dados"
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5002)

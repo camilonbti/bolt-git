@@ -1,26 +1,65 @@
 class DashboardDataManager {
     constructor() {
         console.info('Inicializando DashboardDataManager');
-        this.data = window.ATENDIMENTOS_DATASET || [];
+        
+        // Verifica se o dataset foi injetado corretamente
+        if (typeof ATENDIMENTOS_DATASET === 'undefined') {
+            console.error('Dataset não encontrado');
+            this.data = [];
+        } else {
+            console.info('Dataset carregado com sucesso:', {
+                registros: ATENDIMENTOS_DATASET.length,
+                primeiroRegistro: ATENDIMENTOS_DATASET[0],
+                ultimoRegistro: ATENDIMENTOS_DATASET[ATENDIMENTOS_DATASET.length - 1]
+            });
+            this.data = ATENDIMENTOS_DATASET;
+        }
+
         this.setupEventListeners();
         this.initializePeriodFilter();
     }
 
     setupEventListeners() {
+        console.debug('Configurando event listeners');
+        
         document.addEventListener('filterChange', (event) => {
-            console.debug('Evento de mudança de filtro recebido:', event.detail);
+            console.info('Evento de mudança de filtro recebido:', {
+                filtros: event.detail,
+                timestamp: new Date().toISOString()
+            });
             this.applyFilters(event.detail);
+        });
+
+        document.addEventListener('dashboardUpdate', (event) => {
+            console.info('Evento de atualização do dashboard recebido:', {
+                dados: event.detail,
+                timestamp: new Date().toISOString()
+            });
         });
     }
 
     initializePeriodFilter() {
-        const today = new Date();
-        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        console.debug('Inicializando filtro de período');
         
+        if (this.data.length === 0) {
+            console.warn('Sem dados para inicializar filtro de período');
+            return;
+        }
+
+        // Encontra a data mais antiga e mais recente no dataset
+        const dates = this.data.map(item => new Date(item.data_hora));
+        const minDate = new Date(Math.min(...dates));
+        const maxDate = new Date(Math.max(...dates));
+
+        console.info('Período inicial definido:', {
+            inicio: minDate.toISOString(),
+            fim: maxDate.toISOString()
+        });
+
         this.applyFilters({
             period: {
-                start: this.#formatDate(firstDayOfMonth),
-                end: this.#formatDate(today)
+                start: this.#formatDate(minDate),
+                end: this.#formatDate(maxDate)
             }
         });
     }
@@ -29,29 +68,20 @@ class DashboardDataManager {
         return date.toISOString().split('T')[0];
     }
 
-    #parseDate(dateStr) {
-        if (!dateStr) return null;
-        try {
-            const date = new Date(dateStr);
-            return isNaN(date.getTime()) ? null : date;
-        } catch (error) {
-            console.error('Erro ao converter data:', error);
-            return null;
-        }
-    }
-
     applyFilters(filters) {
         console.debug('Aplicando filtros:', filters);
         
         try {
             const filteredData = this.#filterData(this.data, filters);
-            this.#updateDashboard(filteredData);
             
-            console.info('Filtros aplicados com sucesso:', {
+            console.info('Dados filtrados:', {
                 antes: this.data.length,
                 depois: filteredData.length,
                 filtrosAtivos: Object.keys(filters).length
             });
+
+            this.#updateDashboard(filteredData);
+            
         } catch (error) {
             console.error('Erro ao aplicar filtros:', error);
         }
@@ -84,11 +114,16 @@ class DashboardDataManager {
         }
 
         try {
-            const dataRegistro = this.#parseDate(registro.data_hora);
-            const startDate = this.#parseDate(period.start);
-            const endDate = this.#parseDate(period.end);
+            const dataRegistro = new Date(registro.data_hora);
+            const startDate = new Date(period.start);
+            const endDate = new Date(period.end);
             
             if (!dataRegistro || !startDate || !endDate) {
+                console.warn('Data inválida encontrada:', {
+                    registro: registro.data_hora,
+                    inicio: period.start,
+                    fim: period.end
+                });
                 return true;
             }
 
@@ -114,12 +149,20 @@ class DashboardDataManager {
     }
 
     #updateDashboard(filteredData) {
+        console.debug('Atualizando dashboard com dados filtrados');
+        
         const dashboardData = {
             registros: filteredData,
             kpis: this.#calcularKPIs(filteredData),
             graficos: this.#calcularGraficos(filteredData),
             ultima_atualizacao: new Date().toISOString()
         };
+
+        console.info('Dashboard atualizado:', {
+            totalRegistros: filteredData.length,
+            kpis: dashboardData.kpis,
+            timestamp: dashboardData.ultima_atualizacao
+        });
 
         document.dispatchEvent(new CustomEvent('dashboardUpdate', { 
             detail: dashboardData 
@@ -167,6 +210,11 @@ class DashboardDataManager {
     }
 
     update(newData) {
+        console.info('Atualizando dados do dashboard:', {
+            dadosAntigos: this.data.length,
+            dadosNovos: newData.length
+        });
+        
         this.data = newData;
         this.applyFilters({});
     }

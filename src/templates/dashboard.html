@@ -177,7 +177,18 @@
     
     <!-- Dataset inicial -->
     <script>
-        const ATENDIMENTOS_DATASET = [];  // Será substituído pelo Python
+        // Injeta o dataset processado pelo backend
+        {{ dataset_js|safe }}
+        
+        // Validação do dataset
+        console.info('Inicializando dataset...');
+        if (typeof ATENDIMENTOS_DATASET === 'undefined') {
+            console.error('Dataset não foi carregado corretamente');
+            ATENDIMENTOS_DATASET = [];
+        } else {
+            console.info('Dataset carregado com', ATENDIMENTOS_DATASET.length, 'registros');
+            console.debug('Amostra do primeiro registro:', ATENDIMENTOS_DATASET[0]);
+        }
     </script>
 
     <!-- Scripts da aplicação -->
@@ -191,8 +202,12 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            console.info('Inicializando aplicação...');
+            
             if (typeof DashboardManager !== 'undefined') {
+                console.debug('DashboardManager encontrado, inicializando...');
                 window.dashboardManager = new DashboardManager();
+                console.info('Dashboard inicializado com sucesso');
             } else {
                 console.error('DashboardManager não encontrado');
             }
