@@ -1,6 +1,7 @@
 class FilterManager {
     constructor() {
         console.info('Inicializando FilterManager');
+        this.timezone = 'America/Sao_Paulo';
         this.filters = new Map();
         this.filterContainer = document.getElementById('activeFilters');
         
@@ -35,23 +36,19 @@ class FilterManager {
         if (startDate && endDate && startDate.value && endDate.value) {
             if (this.validateDates(startDate.value, endDate.value)) {
                 this.toggleFilter('period', {
-                    start: this.setStartOfDay(startDate.value),
-                    end: this.setEndOfDay(endDate.value)
+                    start: startDate.value,
+                    end: endDate.value
                 });
             }
         }
     }
 
-    setStartOfDay(dateStr) {
-        const date = new Date(dateStr);
-        date.setHours(0, 0, 0, 0);
-        return date.toISOString();
+    getDateWithMinTime(dateStr) {
+        return `${dateStr}T00:00:00.000-03:00`;
     }
 
-    setEndOfDay(dateStr) {
-        const date = new Date(dateStr);
-        date.setHours(23, 59, 59, 999);
-        return date.toISOString();
+    getDateWithMaxTime(dateStr) {
+        return `${dateStr}T23:59:59.999-03:00`;
     }
 
     initializeDateFields() {
@@ -71,8 +68,8 @@ class FilterManager {
             endDateInput.value = this.formatDateForInput(now);
             
             this.toggleFilter('period', {
-                start: this.setStartOfDay(startDateInput.value),
-                end: this.setEndOfDay(endDateInput.value)
+                start: startDateInput.value,
+                end: endDateInput.value
             });
             
             console.debug('Campos de data inicializados:', {
@@ -86,7 +83,8 @@ class FilterManager {
 
     formatDateForInput(date) {
         try {
-            return date.toISOString().split('T')[0];
+            const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+            return localDate.toISOString().split('T')[0];
         } catch (error) {
             console.error('Erro ao formatar data para input:', error);
             return '';
@@ -97,7 +95,7 @@ class FilterManager {
         try {
             const date = new Date(dateStr);
             return date.toLocaleDateString('pt-BR', {
-                timeZone: 'America/Sao_Paulo'
+                timeZone: this.timezone
             });
         } catch (error) {
             console.error('Erro ao formatar data para exibição:', error);
@@ -107,12 +105,10 @@ class FilterManager {
 
     validateDates(startDate, endDate) {
         try {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
+            const start = new Date(this.getDateWithMinTime(startDate));
+            const end = new Date(this.getDateWithMaxTime(endDate));
             const today = new Date();
             
-            today.setHours(23, 59, 59, 999);
-
             if (isNaN(start.getTime()) || isNaN(end.getTime())) {
                 this.showError('Data inválida');
                 return false;
@@ -120,11 +116,6 @@ class FilterManager {
 
             if (start > end) {
                 this.showError('Data inicial não pode ser maior que a data final');
-                return false;
-            }
-
-            if (end > today) {
-                this.showError('Não é possível selecionar datas futuras');
                 return false;
             }
 
@@ -139,7 +130,14 @@ class FilterManager {
         console.debug(`Alternando filtro: ${type} = ${JSON.stringify(value)}`);
 
         if (type === 'period') {
-            this.filters.set(type, value);
+            if (value && value.start && value.end) {
+                this.filters.set(type, {
+                    start: this.getDateWithMinTime(value.start),
+                    end: this.getDateWithMaxTime(value.end)
+                });
+            } else {
+                this.filters.delete(type);
+            }
         } else {
             if (!this.filters.has(type)) {
                 this.filters.set(type, new Set());

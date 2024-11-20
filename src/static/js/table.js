@@ -1,4 +1,3 @@
-// src/static/js/table.js
 class TableManager {
     constructor() {
         this.table = document.getElementById('tableBody');
@@ -41,15 +40,19 @@ class TableManager {
 
     formatDate(dateStr) {
         if (!dateStr) return { date: 'N/A', time: '' };
+        
         try {
-            // Converte para timezone local (Brasil)
             const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return { date: 'Data inválida', time: '' };
+
+            // Formata data considerando timezone
             const options = { 
                 timeZone: this.timezone,
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
             };
+            
             const timeOptions = {
                 timeZone: this.timezone,
                 hour: '2-digit',

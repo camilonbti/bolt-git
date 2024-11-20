@@ -2,7 +2,6 @@
 Gerenciador de filtros dinâmicos para dashboard
 """
 from typing import Dict, List, Any, Optional
-from datetime import datetime
 import pandas as pd
 import logging
 from .config.campos_config import (
@@ -11,7 +10,13 @@ from .config.campos_config import (
     get_valores_default,
     get_campos_filtraveis
 )
-from zoneinfo import ZoneInfo
+from .utils.date_utils import (
+    TIMEZONE,
+    format_date_range,
+    format_timestamp,
+    format_display_date,
+    get_current_time
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +26,6 @@ class FiltrosDashboard:
         self.mapeamento_colunas = get_mapeamento_colunas()
         self.valores_default = get_valores_default()
         self.campos_filtraveis = get_campos_filtraveis()
-        self.timezone = ZoneInfo("America/Sao_Paulo")
         self.filtros_ativos = {}
 
     def aplicar_filtros(self, df: pd.DataFrame, filtros: Dict[str, Any]) -> pd.DataFrame:
@@ -42,6 +46,7 @@ class FiltrosDashboard:
                     df_filtrado = df_filtrado[df_filtrado[nome_interno] == valor]
             
             return df_filtrado
+            
         except Exception as e:
             logger.error(f"Erro ao aplicar filtros: {str(e)}")
             return df
@@ -49,20 +54,21 @@ class FiltrosDashboard:
     def _aplicar_filtro_data(self, df: pd.DataFrame, campo: str, valor: str) -> pd.DataFrame:
         """Aplica filtro específico para datas."""
         try:
-            # Converte a data para datetime com timezone
-            data = pd.to_datetime(valor).tz_localize(self.timezone)
+            if campo not in df.columns:
+                return df
+                
+            if isinstance(valor, dict) and 'start' in valor and 'end' in valor:
+                inicio, fim = format_date_range(valor['start'], valor['end'])
+            else:
+                inicio, fim = format_date_range(valor)
             
-            # Define início (00:00:00) e fim (23:59:59.999999) do dia
-            inicio_dia = data.replace(hour=0, minute=0, second=0, microsecond=0)
-            fim_dia = data.replace(hour=23, minute=59, second=59, microsecond=999999)
-            
-            # Filtra registros dentro do intervalo do dia
             return df[
-                (df[campo] >= inicio_dia) & 
-                (df[campo] <= fim_dia)
+                (df[campo] >= inicio) & 
+                (df[campo] <= fim)
             ]
-        except ValueError as e:
-            logger.error(f"Erro ao processar data para filtro: {str(e)}")
+            
+        except Exception as e:
+            logger.error(f"Erro ao aplicar filtro de data: {str(e)}")
             return df
 
     def gerar_dados_graficos(self, df: pd.DataFrame) -> Dict[str, Any]:
@@ -81,6 +87,7 @@ class FiltrosDashboard:
                     }
             
             return dados_graficos
+            
         except Exception as e:
             logger.error(f"Erro ao gerar dados para gráficos: {str(e)}")
             return {}
@@ -115,7 +122,10 @@ class FiltrosDashboard:
 
         if config["tipo"] == "datetime":
             try:
-                pd.to_datetime(valor)
+                if isinstance(valor, dict):
+                    format_date_range(valor.get('start'), valor.get('end'))
+                else:
+                    format_date_range(valor)
                 return True
             except:
                 return False

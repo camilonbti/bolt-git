@@ -9,6 +9,13 @@ from ..config.campos_config import (
     validar_cabecalho,
     get_mapeamento_colunas
 )
+from ..utils.date_utils import (
+    TIMEZONE,
+    format_date_range,
+    format_timestamp,
+    format_display_date,
+    get_current_time
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -120,8 +127,18 @@ class GoogleSheetsClient:
                 logger.error(error_msg)
                 raise ValueError("Estrutura da planilha inválida")
             
-            logger.info(f"Dados lidos com sucesso. Total de linhas: {total_linhas}")
+            # Processa datas no formato correto
+            if len(dados) > 1:
+                for linha in dados[1:]:
+                    if len(linha) > 0:  # Coluna de data é a primeira
+                        try:
+                            data = format_date_range(linha[0], date_only=True)
+                            linha[0] = format_display_date(data)
+                        except:
+                            logger.warning(f"Erro ao processar data: {linha[0]}")
+                            linha[0] = format_display_date(get_current_time())
             
+            logger.info(f"Dados lidos com sucesso. Total de linhas: {total_linhas}")
             return dados
             
         except HttpError as e:

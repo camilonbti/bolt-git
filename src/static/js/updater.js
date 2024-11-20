@@ -40,15 +40,7 @@ class DashboardUpdater {
             }));
 
             // Atualiza timestamp de última atualização
-            data.ultima_atualizacao = new Date().toLocaleString('pt-BR', {
-                timeZone: this.timezone,
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
+            data.ultima_atualizacao = this.formatDateTime(new Date());
 
             window.dashboardManager?.dataManager?.update(data);
             this.showUpdateSuccess();
@@ -73,15 +65,15 @@ class DashboardUpdater {
             const date = new Date(dateStr);
             if (isNaN(date.getTime())) return null;
 
-            // Formata considerando timezone
             return date.toLocaleString('pt-BR', {
                 timeZone: this.timezone,
-                day: '2-digit',
-                month: '2-digit',
                 year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
                 hour: '2-digit',
                 minute: '2-digit',
-                second: '2-digit'
+                second: '2-digit',
+                hour12: false
             });
         } catch (error) {
             console.error('Erro ao formatar data:', error);

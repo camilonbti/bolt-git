@@ -1,6 +1,7 @@
 class DashboardDataManager {
     constructor() {
         console.info('Inicializando DashboardDataManager');
+        this.timezone = 'America/Sao_Paulo';
         this.data = {
             registros: [],
             kpis: {
@@ -19,7 +20,7 @@ class DashboardDataManager {
                 relato: { labels: [], values: [] },
                 solicitacao: { labels: [], values: [] }
             },
-            ultima_atualizacao: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+            ultima_atualizacao: this.formatDateTime(new Date())
         };
         
         this.setupEventListeners();
@@ -32,7 +33,7 @@ class DashboardDataManager {
         document.addEventListener('filterChange', (event) => {
             console.info('Evento de mudança de filtro recebido:', {
                 filtros: event.detail,
-                timestamp: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+                timestamp: this.formatDateTime(new Date())
             });
             this.applyFilters(event.detail);
         });
@@ -59,7 +60,7 @@ class DashboardDataManager {
             this.data = data;
             console.info('Dados iniciais carregados:', {
                 registros: data.registros.length,
-                timestamp: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+                timestamp: this.formatDateTime(new Date())
             });
 
             document.dispatchEvent(new CustomEvent('dashboardUpdate', { 
@@ -85,15 +86,13 @@ class DashboardDataManager {
                 return;
             }
 
-            // Filtra os registros
             const filteredRegistros = this.#filterData(this.data.registros, filters);
             
-            // Recalcula KPIs e gráficos com os dados filtrados
             const updatedData = {
                 registros: filteredRegistros,
                 kpis: this.#calcularKPIs(filteredRegistros),
                 graficos: this.#calcularGraficos(filteredRegistros),
-                ultima_atualizacao: this.data.ultima_atualizacao
+                ultima_atualizacao: this.formatDateTime(new Date())
             };
 
             console.info('Dados filtrados:', {
@@ -139,26 +138,11 @@ class DashboardDataManager {
         }
 
         try {
-            const dataRegistro = new Date(registro.data_hora);
-            const startDate = new Date(period.start);
-            const endDate = new Date(period.end);
-            
-            if (!dataRegistro || !startDate || !endDate) {
-                console.warn('Data inválida encontrada:', {
-                    registro: registro.data_hora,
-                    inicio: period.start,
-                    fim: period.end
-                });
-                return true;
-            }
+            const registroTimestamp = new Date(registro.data_hora).getTime();
+            const startTimestamp = new Date(period.start).getTime();
+            const endTimestamp = new Date(period.end).getTime();
 
-            // Ajusta para timezone local (America/Sao_Paulo)
-            const options = { timeZone: 'America/Sao_Paulo' };
-            const dataRegistroLocal = new Date(dataRegistro.toLocaleString('en-US', options));
-            const startDateLocal = new Date(startDate.toLocaleString('en-US', options));
-            const endDateLocal = new Date(endDate.toLocaleString('en-US', options));
-
-            return dataRegistroLocal >= startDateLocal && dataRegistroLocal <= endDateLocal;
+            return registroTimestamp >= startTimestamp && registroTimestamp <= endTimestamp;
         } catch (error) {
             console.error('Erro ao filtrar por período:', error);
             return true;
@@ -180,6 +164,18 @@ class DashboardDataManager {
         return registro[mapeamento[tipo] || tipo] || '';
     }
 
+    formatDateTime(date) {
+        return date.toLocaleString('pt-BR', {
+            timeZone: this.timezone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+
     #calcularKPIs(registros) {
         const total = registros.length;
         const pendentes = registros.filter(r => r.status_atendimento === 'Pendente').length;
@@ -195,13 +191,13 @@ class DashboardDataManager {
     #calcularGraficos(registros) {
         return {
             status: this.#contarValores(registros, 'status_atendimento'),
-            tipo: this.#contarValores(registros, 'tipo_atendimento'),
-            funcionario: this.#contarValores(registros, 'funcionario'),
-            cliente: this.#contarValores(registros, 'cliente'),
-            sistema: this.#contarValores(registros, 'sistema'),
+            tipo: this.#contarValores(registros, 'tipo_atendimento', 10),
+            funcionario: this.#contarValores(registros, 'funcionario', 10),
+            cliente: this.#contarValores(registros, 'cliente', 10),
+            sistema: this.#contarValores(registros, 'sistema', 10),
             canal: this.#contarValores(registros, 'canal_atendimento'),
-            relato: this.#contarValores(registros, 'solicitacao_cliente'),
-            solicitacao: this.#contarValores(registros, 'tipo_atendimento')
+            relato: this.#contarValores(registros, 'solicitacao_cliente', 10),
+            solicitacao: this.#contarValores(registros, 'tipo_atendimento', 10)
         };
     }
 
