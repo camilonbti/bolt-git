@@ -5,7 +5,11 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from .logger import log_manager
-from ..config import GOOGLE_SHEETS_CONFIG
+from ..config.campos_config import (
+    GOOGLE_SHEETS_CONFIG, 
+    validar_cabecalho,
+    get_mapeamento_colunas
+)
 import json
 
 logger = log_manager.get_logger(__name__)
@@ -17,6 +21,7 @@ class GoogleSheetsClient:
         self.credentials = self._get_credentials()
         self.service = self._create_service()
         self.spreadsheet_id = self._extract_spreadsheet_id()
+        self.mapeamento_colunas = get_mapeamento_colunas()
         logger.info(f"Cliente inicializado com sucesso. Spreadsheet ID: {self.spreadsheet_id}")
 
     def _get_credentials(self):
@@ -78,6 +83,7 @@ class GoogleSheetsClient:
         Raises:
             HttpError: Erro de comunicação com a API
             RuntimeError: Outros erros durante a leitura
+            ValueError: Estrutura da planilha inválida
         """
         try:
             range_name = range_name or self.config["default_range"]
@@ -103,12 +109,20 @@ class GoogleSheetsClient:
             
             dados = result.get('values', [])
             total_linhas = len(dados)
-            logger.info(f"Dados lidos com sucesso. Total de linhas: {total_linhas}")
             
             if total_linhas == 0:
                 logger.warning("Nenhum dado encontrado na planilha")
-            else:
-                logger.debug(f"Amostra dos dados: {json.dumps(dados[0], ensure_ascii=False)}")
+                return []
+            
+            # Valida o cabeçalho da planilha
+            cabecalho = dados[0]
+            if not validar_cabecalho(cabecalho):
+                error_msg = "Cabeçalho da planilha não corresponde ao mapeamento configurado"
+                logger.error(error_msg)
+                raise ValueError("Estrutura da planilha inválida")
+            
+            logger.info(f"Dados lidos com sucesso. Total de linhas: {total_linhas}")
+            logger.debug(f"Amostra dos dados: {json.dumps(dados[0], ensure_ascii=False)}")
             
             return dados
             
@@ -116,6 +130,10 @@ class GoogleSheetsClient:
             error_msg = f"Erro de API do Google Sheets: {str(e)}"
             logger.error(error_msg, exc_info=True)
             raise HttpError(e.resp, e.content)
+        except ValueError as e:
+            error_msg = f"Erro de estrutura da planilha: {str(e)}"
+            logger.error(error_msg, exc_info=True)
+            raise
         except Exception as e:
             error_msg = f"Erro ao ler planilha: {str(e)}"
             logger.error(error_msg, exc_info=True)

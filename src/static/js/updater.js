@@ -2,6 +2,7 @@ class DashboardUpdater {
     constructor() {
         this.setupEventListeners();
         this.isUpdating = false;
+        this.timezone = 'America/Sao_Paulo';
     }
     
     setupEventListeners() {
@@ -32,6 +33,23 @@ class DashboardUpdater {
                 throw new Error('Dados inválidos recebidos do servidor');
             }
 
+            // Formata datas considerando timezone
+            data.registros = data.registros.map(registro => ({
+                ...registro,
+                data_hora: this.formatDateTime(registro.data_hora)
+            }));
+
+            // Atualiza timestamp de última atualização
+            data.ultima_atualizacao = new Date().toLocaleString('pt-BR', {
+                timeZone: this.timezone,
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
             window.dashboardManager?.dataManager?.update(data);
             this.showUpdateSuccess();
             
@@ -45,6 +63,29 @@ class DashboardUpdater {
                 updateButton.disabled = false;
                 updateButton.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar';
             }
+        }
+    }
+
+    formatDateTime(dateStr) {
+        if (!dateStr) return null;
+        
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return null;
+
+            // Formata considerando timezone
+            return date.toLocaleString('pt-BR', {
+                timeZone: this.timezone,
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        } catch (error) {
+            console.error('Erro ao formatar data:', error);
+            return null;
         }
     }
     

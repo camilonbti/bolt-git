@@ -5,14 +5,23 @@ from typing import Dict, List, Any
 import pandas as pd
 from datetime import datetime
 import logging
-from ..config.campos_config import CAMPOS_CONFIGURACAO
-from .logger import log_manager
+from ..config.campos_config import (
+    CAMPOS_CONFIGURACAO,
+    get_mapeamento_colunas,
+    get_valores_default,
+    get_campos_filtraveis
+)
+from zoneinfo import ZoneInfo
 
-logger = log_manager.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class DashboardManager:
     def __init__(self):
         self.config = CAMPOS_CONFIGURACAO
+        self.mapeamento_colunas = get_mapeamento_colunas()
+        self.valores_default = get_valores_default()
+        self.campos_filtraveis = get_campos_filtraveis()
+        self.timezone = ZoneInfo("America/Sao_Paulo")
         logger.debug("DashboardManager inicializado")
 
     def processar_dashboard(self, dados_brutos: List[Dict]) -> Dict[str, Any]:
@@ -37,7 +46,7 @@ class DashboardManager:
                 'kpis': self._calcular_kpis(df),
                 'graficos': self._gerar_dados_graficos(df),
                 'registros': df.to_dict('records'),
-                'ultima_atualizacao': datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+                'ultima_atualizacao': datetime.now(self.timezone).strftime('%d/%m/%Y %H:%M:%S')
             }
             
             logger.info("Dashboard processado com sucesso")
@@ -89,10 +98,10 @@ class DashboardManager:
                 logger.warning(f"Campo de data {campo_data} não encontrado")
                 return df
             
-            # Converte datas com múltiplos formatos possíveis
             def converter_data(valor):
                 if pd.isna(valor) or valor == data_config["valor_default"]:
-                    return pd.NaT
+                    hoje = pd.Timestamp.now(tz=self.timezone)
+                    return hoje.replace(hour=0, minute=0, second=0, microsecond=0)
                 
                 formatos = [
                     "%d/%m/%Y %H:%M:%S",
@@ -103,23 +112,38 @@ class DashboardManager:
                 
                 for formato in formatos:
                     try:
-                        return pd.to_datetime(valor, format=formato)
+                        data = pd.to_datetime(valor, format=formato)
+                        if formato == "%Y-%m-%d":
+                            data = data.replace(hour=0, minute=0, second=0, microsecond=0)
+                        if data.tz is None:
+                            data = data.tz_localize(self.timezone)
+                        else:
+                            data = data.tz_convert(self.timezone)
+                        return data
                     except:
                         continue
                 
                 try:
-                    return pd.to_datetime(valor)
+                    data = pd.to_datetime(valor)
+                    if data.tz is None:
+                        data = data.tz_localize(self.timezone)
+                    else:
+                        data = data.tz_convert(self.timezone)
+                    return data
                 except:
                     logger.warning(f"Não foi possível converter data: {valor}")
-                    return pd.NaT
+                    hoje = pd.Timestamp.now(tz=self.timezone)
+                    return hoje.replace(hour=0, minute=0, second=0, microsecond=0)
             
             df[campo_data] = df[campo_data].apply(converter_data)
             
-            # Trata datas inválidas
             datas_invalidas = df[campo_data].isna()
             if datas_invalidas.any():
                 logger.warning(f"Encontradas {datas_invalidas.sum()} datas inválidas")
-                df.loc[datas_invalidas, campo_data] = pd.to_datetime('now')
+                hoje = pd.Timestamp.now(tz=self.timezone)
+                df.loc[datas_invalidas, campo_data] = hoje.replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
             
             return df
             
@@ -165,8 +189,14 @@ class DashboardManager:
         try:
             graficos = {
                 'status': self._contar_por_coluna(df, 'status_atendimento'),
-                'tipo': self._contar_por_coluna(df, 'tipo_atendimento'),
-                'timeline': self._gerar_timeline(df)
+                'tipo': self._contar_por_coluna(df, 'tipo_atendimento', 10),
+                'funcionario': self._contar_por_coluna(df, 'funcionario', 10),
+                'cliente': self._contar_por_coluna(df, 'cliente', 10),
+                'sistema': self._contar_por_coluna(df, 'sistema', 10),
+                'canal': self._contar_por_coluna(df, 'canal_atendimento'),
+                'timeline': self._gerar_timeline(df),
+                'relato': self._contar_por_coluna(df, 'solicitacao_cliente', 10),
+                'solicitacao': self._contar_por_coluna(df, 'tipo_atendimento', 10)
             }
             
             logger.debug("Dados dos gráficos gerados com sucesso")
@@ -176,7 +206,7 @@ class DashboardManager:
             logger.error(f"Erro ao gerar dados dos gráficos: {str(e)}")
             return self._get_graficos_vazios()
 
-    def _contar_por_coluna(self, df: pd.DataFrame, coluna: str) -> Dict[str, List]:
+    def _contar_por_coluna(self, df: pd.DataFrame, coluna: str, limite: int = None) -> Dict[str, List]:
         """Conta ocorrências em uma coluna."""
         try:
             if coluna not in df.columns:
@@ -184,6 +214,8 @@ class DashboardManager:
                 return {'labels': [], 'values': []}
                 
             contagem = df[coluna].value_counts()
+            if limite:
+                contagem = contagem.head(limite)
             return {
                 'labels': contagem.index.tolist(),
                 'values': contagem.values.tolist()
@@ -195,7 +227,7 @@ class DashboardManager:
     def _gerar_timeline(self, df: pd.DataFrame) -> Dict[str, List]:
         """Gera dados para o gráfico de timeline."""
         try:
-            df['data'] = df['data_hora'].dt.date
+            df['data'] = df['data_hora'].dt.tz_convert(self.timezone).dt.date
             contagem_diaria = df.groupby('data').size()
             return {
                 'labels': [d.strftime('%d/%m/%Y') for d in contagem_diaria.index],
@@ -211,7 +243,7 @@ class DashboardManager:
             'kpis': self._get_kpis_vazios(),
             'graficos': self._get_graficos_vazios(),
             'registros': [],
-            'ultima_atualizacao': datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+            'ultima_atualizacao': datetime.now(self.timezone).strftime('%d/%m/%Y %H:%M:%S')
         }
 
     def _get_kpis_vazios(self) -> Dict[str, Any]:
@@ -228,5 +260,11 @@ class DashboardManager:
         return {
             'status': {'labels': [], 'values': []},
             'tipo': {'labels': [], 'values': []},
-            'timeline': {'labels': [], 'values': []}
+            'funcionario': {'labels': [], 'values': []},
+            'cliente': {'labels': [], 'values': []},
+            'sistema': {'labels': [], 'values': []},
+            'canal': {'labels': [], 'values': []},
+            'timeline': {'labels': [], 'values': []},
+            'relato': {'labels': [], 'values': []},
+            'solicitacao': {'labels': [], 'values': []}
         }

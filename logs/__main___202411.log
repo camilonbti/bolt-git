@@ -22,3 +22,15 @@
 [2024-11-20 14:25:28] INFO     [__main__:index:19] Iniciando carregamento do dashboard
 [2024-11-20 14:25:28] INFO     [__main__:get_data:33] Iniciando carregamento de dados via API
 [2024-11-20 14:25:30] INFO     [__main__:get_data:41] Dados processados com sucesso
+[2024-11-20 14:28:55] INFO     [__main__:index:19] Iniciando carregamento do dashboard
+[2024-11-20 14:28:55] INFO     [__main__:get_data:33] Iniciando carregamento de dados via API
+[2024-11-20 14:28:57] INFO     [__main__:get_data:41] Dados processados com sucesso
+[2024-11-20 14:44:51] INFO     [__main__:index:19] Iniciando carregamento do dashboard
+[2024-11-20 14:44:51] INFO     [__main__:get_data:33] Iniciando carregamento de dados via API
+[2024-11-20 14:44:53] INFO     [__main__:get_data:41] Dados processados com sucesso
+[2024-11-20 15:19:22] INFO     [__main__:index:19] Iniciando carregamento do dashboard
+[2024-11-20 15:19:22] INFO     [__main__:get_data:33] Iniciando carregamento de dados via API
+[2024-11-20 15:19:24] INFO     [__main__:get_data:41] Dados processados com sucesso
+[2024-11-20 15:51:15] INFO     [__main__:index:19] Iniciando carregamento do dashboard
+[2024-11-20 15:51:15] INFO     [__main__:get_data:33] Iniciando carregamento de dados via API
+[2024-11-20 15:51:18] ERROR    [__main__:get_data:46] Erro ao buscar dados: Erro ao ler planilha: Estrutura da planilha inválida

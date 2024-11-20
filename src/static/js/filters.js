@@ -35,11 +35,23 @@ class FilterManager {
         if (startDate && endDate && startDate.value && endDate.value) {
             if (this.validateDates(startDate.value, endDate.value)) {
                 this.toggleFilter('period', {
-                    start: startDate.value,
-                    end: endDate.value
+                    start: this.setStartOfDay(startDate.value),
+                    end: this.setEndOfDay(endDate.value)
                 });
             }
         }
+    }
+
+    setStartOfDay(dateStr) {
+        const date = new Date(dateStr);
+        date.setHours(0, 0, 0, 0);
+        return date.toISOString();
+    }
+
+    setEndOfDay(dateStr) {
+        const date = new Date(dateStr);
+        date.setHours(23, 59, 59, 999);
+        return date.toISOString();
     }
 
     initializeDateFields() {
@@ -59,8 +71,8 @@ class FilterManager {
             endDateInput.value = this.formatDateForInput(now);
             
             this.toggleFilter('period', {
-                start: startDateInput.value,
-                end: endDateInput.value
+                start: this.setStartOfDay(startDateInput.value),
+                end: this.setEndOfDay(endDateInput.value)
             });
             
             console.debug('Campos de data inicializados:', {
@@ -78,6 +90,18 @@ class FilterManager {
         } catch (error) {
             console.error('Erro ao formatar data para input:', error);
             return '';
+        }
+    }
+
+    formatDateForDisplay(dateStr) {
+        try {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('pt-BR', {
+                timeZone: 'America/Sao_Paulo'
+            });
+        } catch (error) {
+            console.error('Erro ao formatar data para exibição:', error);
+            return dateStr;
         }
     }
 
@@ -219,16 +243,6 @@ class FilterManager {
         return item;
     }
 
-    formatDateForDisplay(dateStr) {
-        try {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('pt-BR');
-        } catch (error) {
-            console.error('Erro ao formatar data para exibição:', error);
-            return dateStr;
-        }
-    }
-
     getFilterLabel(type) {
         const labels = {
             status: 'Status',
@@ -237,7 +251,9 @@ class FilterManager {
             cliente: 'Cliente',
             sistema: 'Sistema',
             canal: 'Canal',
-            period: 'Período'
+            period: 'Período',
+            relato: 'Relato',
+            solicitacao: 'Solicitação'
         };
         return labels[type] || type;
     }

@@ -46,3 +46,32 @@
 [2024-11-20 14:25:28] INFO     [src.core.sheets_client:__init__:20] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
 [2024-11-20 14:25:28] INFO     [src.core.sheets_client:ler_planilha:84] Iniciando leitura do range: Sheet1!A1:Z1000
 [2024-11-20 14:25:30] INFO     [src.core.sheets_client:ler_planilha:106] Dados lidos com sucesso. Total de linhas: 491
+[2024-11-20 14:28:55] INFO     [src.core.sheets_client:__init__:16] Inicializando cliente do Google Sheets
+[2024-11-20 14:28:55] INFO     [src.core.sheets_client:_get_credentials:30] Credenciais obtidas com sucesso
+[2024-11-20 14:28:55] INFO     [src.core.sheets_client:_create_service:46] Serviço do Google Sheets criado com sucesso
+[2024-11-20 14:28:55] INFO     [src.core.sheets_client:__init__:20] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
+[2024-11-20 14:28:55] INFO     [src.core.sheets_client:ler_planilha:84] Iniciando leitura do range: Sheet1!A1:Z1000
+[2024-11-20 14:28:57] INFO     [src.core.sheets_client:ler_planilha:106] Dados lidos com sucesso. Total de linhas: 491
+[2024-11-20 14:44:51] INFO     [src.core.sheets_client:__init__:16] Inicializando cliente do Google Sheets
+[2024-11-20 14:44:51] INFO     [src.core.sheets_client:_get_credentials:30] Credenciais obtidas com sucesso
+[2024-11-20 14:44:51] INFO     [src.core.sheets_client:_create_service:46] Serviço do Google Sheets criado com sucesso
+[2024-11-20 14:44:51] INFO     [src.core.sheets_client:__init__:20] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
+[2024-11-20 14:44:51] INFO     [src.core.sheets_client:ler_planilha:84] Iniciando leitura do range: Sheet1!A1:Z1000
+[2024-11-20 14:44:53] INFO     [src.core.sheets_client:ler_planilha:106] Dados lidos com sucesso. Total de linhas: 491
+[2024-11-20 15:19:22] INFO     [src.core.sheets_client:__init__:16] Inicializando cliente do Google Sheets
+[2024-11-20 15:19:22] INFO     [src.core.sheets_client:_get_credentials:30] Credenciais obtidas com sucesso
+[2024-11-20 15:19:22] INFO     [src.core.sheets_client:_create_service:46] Serviço do Google Sheets criado com sucesso
+[2024-11-20 15:19:22] INFO     [src.core.sheets_client:__init__:20] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
+[2024-11-20 15:19:22] INFO     [src.core.sheets_client:ler_planilha:84] Iniciando leitura do range: Sheet1!A1:Z1000
+[2024-11-20 15:19:24] INFO     [src.core.sheets_client:ler_planilha:106] Dados lidos com sucesso. Total de linhas: 491
+[2024-11-20 15:51:15] INFO     [src.core.sheets_client:__init__:19] Inicializando cliente do Google Sheets
+[2024-11-20 15:51:15] INFO     [src.core.sheets_client:_get_credentials:33] Credenciais obtidas com sucesso
+[2024-11-20 15:51:15] INFO     [src.core.sheets_client:_create_service:49] Serviço do Google Sheets criado com sucesso
+[2024-11-20 15:51:15] INFO     [src.core.sheets_client:__init__:23] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
+[2024-11-20 15:51:15] INFO     [src.core.sheets_client:ler_planilha:87] Iniciando leitura do range: Sheet1!A1:Z1000
+[2024-11-20 15:51:18] ERROR    [src.core.sheets_client:ler_planilha:119] Cabeçalho da planilha não corresponde ao mapeamento configurado
+[2024-11-20 15:51:18] ERROR    [src.core.sheets_client:ler_planilha:133] Erro ao ler planilha: Estrutura da planilha inválida
+Traceback (most recent call last):
+  File "/Users/camilo/projetos_vs/bolt_git/src/core/sheets_client.py", line 120, in ler_planilha
+    raise ValueError("Estrutura da planilha inválida")
+ValueError: Estrutura da planilha inválida

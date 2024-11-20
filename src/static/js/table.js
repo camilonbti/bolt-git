@@ -5,6 +5,7 @@ class TableManager {
         this.pagination = document.getElementById('pagination');
         this.itemsPerPage = 10;
         this.currentPage = 1;
+        this.timezone = 'America/Sao_Paulo';
         
         if (!this.table) {
             console.warn('Elemento da tabela não encontrado');
@@ -41,13 +42,24 @@ class TableManager {
     formatDate(dateStr) {
         if (!dateStr) return { date: 'N/A', time: '' };
         try {
+            // Converte para timezone local (Brasil)
             const date = new Date(dateStr);
+            const options = { 
+                timeZone: this.timezone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            };
+            const timeOptions = {
+                timeZone: this.timezone,
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            };
+            
             return {
-                date: date.toLocaleDateString('pt-BR'),
-                time: date.toLocaleTimeString('pt-BR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                })
+                date: new Intl.DateTimeFormat('pt-BR', options).format(date),
+                time: new Intl.DateTimeFormat('pt-BR', timeOptions).format(date)
             };
         } catch (e) {
             console.error('Erro ao formatar data:', e);
@@ -104,7 +116,7 @@ class TableManager {
                     <td>${item.canal_atendimento || 'N/A'}</td>
                     <td class="description-cell">
                         <div class="description-content">
-                            ${item.descricao_realizado || 'Sem descrição'}
+                            ${item.solicitacao_cliente || 'Sem descrição'}
                         </div>
                         <span class="description-toggle">Ver mais</span>
                     </td>

@@ -3,47 +3,59 @@ Processador de dados para o dashboard
 """
 from typing import Dict, List, Any
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, time
 import logging
-from ..config.campos_config import CAMPOS_CONFIGURACAO
-from .logger import log_manager
+from ..config.campos_config import (
+    CAMPOS_CONFIGURACAO,
+    MAPEAMENTO_COLUNAS,
+    get_mapeamento_colunas,
+    get_valores_default,
+    validar_cabecalho
+)
 from zoneinfo import ZoneInfo
 
-logger = log_manager.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class ProcessadorDados:
     def __init__(self, config=None):
         self.config = config or CAMPOS_CONFIGURACAO
         self.timezone = ZoneInfo("America/Sao_Paulo")
+        self.mapeamento_colunas = get_mapeamento_colunas()
+        self.valores_default = get_valores_default()
         logger.debug("ProcessadorDados inicializado")
 
     def processar_dados(self, dados_brutos: List[List]) -> Dict[str, Any]:
-        """Processa dados brutos e retorna estrutura completa para o dashboard."""
+        """Processa dados brutos com validação."""
         try:
-            logger.info("Iniciando processamento dos dados")
-            
             if not dados_brutos or len(dados_brutos) < 2:
                 logger.warning("Dados brutos vazios ou insuficientes")
                 return self._get_estrutura_vazia()
-            
-            # Cria DataFrame inicial
+
+            # Valida o cabeçalho
+            cabecalho = dados_brutos[0]
+            if not validar_cabecalho(cabecalho):
+                logger.error("Cabeçalho da planilha não corresponde ao mapeamento configurado")
+                raise ValueError("Estrutura da planilha inválida")
+                
             df = self._criar_dataframe(dados_brutos)
             if df.empty:
                 return self._get_estrutura_vazia()
             
-            # Processa os campos
             df = self._processar_campos(df)
             df = self._processar_datas(df)
             
-            # Gera estrutura de retorno
+            metricas = self._calcular_metricas(df)
+            graficos = self._gerar_dados_graficos(df)
+            registros = df.to_dict('records')
+            
             resultado = {
-                'registros': df.to_dict('records'),
-                'kpis': self._calcular_kpis(df),
-                'graficos': self._gerar_dados_graficos(df),
-                'ultima_atualizacao': datetime.now(self.timezone).strftime('%Y-%m-%d %H:%M:%S')
+                'kpis': metricas,
+                'graficos': graficos,
+                'registros': registros,
+                'ultima_atualizacao': datetime.now(self.timezone).strftime('%d/%m/%Y %H:%M:%S')
             }
             
-            logger.info(f"Dados processados com sucesso: {len(df)} registros")
+            logger.info(f"Dados processados: {len(registros)} registros")
             return resultado
             
         except Exception as e:
@@ -56,26 +68,11 @@ class ProcessadorDados:
             cabecalho = dados_brutos[0]
             dados = dados_brutos[1:]
             
-            # Mapeia nomes das colunas
-            mapeamento_colunas = {
-                'Carimbo de data/hora': 'data_hora',
-                'Prestador de Serviços:': 'funcionario',
-                'Empresa atendida:': 'cliente',
-                'Nome do solicitante:': 'solicitante',
-                'Relato do pedido de atendimento:': 'solicitacao_cliente',
-                'Relato mais detalhado do pedido do cliente:': 'descricao_atendimento',
-                'Status do atendimento:': 'status_atendimento',
-                'Tipo do atendimento solicitado:': 'tipo_atendimento',
-                'Sistema do cliente:': 'sistema',
-                'Qual(s) canal(s) utilizado(s) para realizar o atendimento? ': 'canal_atendimento'
-            }
-            
             df = pd.DataFrame(dados, columns=cabecalho)
-            df = df.rename(columns=mapeamento_colunas)
+            df = df.rename(columns=self.mapeamento_colunas)
             
             logger.debug(f"DataFrame criado com {len(df)} linhas")
             return df
-            
         except Exception as e:
             logger.error(f"Erro ao criar DataFrame: {str(e)}")
             return pd.DataFrame()
@@ -83,37 +80,20 @@ class ProcessadorDados:
     def _processar_campos(self, df: pd.DataFrame) -> pd.DataFrame:
         """Processa todos os campos aplicando valores default e validações."""
         try:
-            # Valores default para campos vazios
-            valores_default = {
-                'funcionario': 'Não informado',
-                'cliente': 'Não informado',
-                'solicitante': 'Não informado',
-                'solicitacao_cliente': 'Não informado',
-                'descricao_atendimento': 'Sem descrição',
-                'status_atendimento': 'Pendente',
-                'tipo_atendimento': 'Não categorizado',
-                'sistema': 'Não especificado',
-                'canal_atendimento': 'Não especificado'
-            }
+            # Aplica valores default para campos vazios
+            df = df.fillna(self.valores_default)
             
-            # Aplica valores default e normaliza strings
-            df = df.fillna(valores_default)
+            # Normaliza strings
             for coluna in ['funcionario', 'cliente', 'solicitante', 'sistema']:
-                df[coluna] = df[coluna].str.strip().str.title()
+                if coluna in df.columns:
+                    df[coluna] = df[coluna].str.strip().str.title()
             
             # Validação específica para status
-            status_validos = ['Concluído', 'Pendente', 'Cancelado', 'Em Andamento']
-            df.loc[~df['status_atendimento'].isin(status_validos), 'status_atendimento'] = 'Pendente'
+            status_config = self.config["Status do atendimento:"]
+            if "valores_permitidos" in status_config:
+                status_validos = status_config["valores_permitidos"]
+                df.loc[~df['status_atendimento'].isin(status_validos), 'status_atendimento'] = status_config["valor_default"]
             
-            # Validação de campos obrigatórios
-            for campo, config in self.config.items():
-                nome_interno = config["nome_interno"]
-                if config.get("obrigatorio", False):
-                    invalidos = df[nome_interno].isin(['', None, 'nan', 'NaN', 'null'])
-                    if invalidos.any():
-                        df.loc[invalidos, nome_interno] = config["valor_default"]
-            
-            logger.debug("Campos processados com sucesso")
             return df
             
         except Exception as e:
@@ -123,9 +103,18 @@ class ProcessadorDados:
     def _processar_datas(self, df: pd.DataFrame) -> pd.DataFrame:
         """Processa campos de data com tratamento de erro robusto."""
         try:
+            data_config = self.config["Carimbo de data/hora"]
+            campo_data = data_config["nome_interno"]
+            
+            if campo_data not in df.columns:
+                logger.warning(f"Campo de data {campo_data} não encontrado")
+                return df
+            
             def converter_data(valor):
-                if pd.isna(valor):
-                    return pd.Timestamp.now(tz=self.timezone)
+                if pd.isna(valor) or valor == data_config["valor_default"]:
+                    # Define data atual com início do dia (00:00:00)
+                    hoje = pd.Timestamp.now(tz=self.timezone)
+                    return hoje.replace(hour=0, minute=0, second=0, microsecond=0)
                 
                 formatos = [
                     "%d/%m/%Y %H:%M:%S",
@@ -136,29 +125,47 @@ class ProcessadorDados:
                 
                 for formato in formatos:
                     try:
+                        # Tenta converter com o formato específico
                         data = pd.to_datetime(valor, format=formato)
+                        
+                        # Se é só data sem hora, define início do dia
+                        if formato == "%Y-%m-%d":
+                            data = data.replace(hour=0, minute=0, second=0, microsecond=0)
+                        
+                        # Se não tem timezone, assume horário de Brasília
                         if data.tz is None:
                             data = data.tz_localize(self.timezone)
+                        else:
+                            # Se tem timezone diferente, converte para Brasília
+                            data = data.tz_convert(self.timezone)
+                        
                         return data
                     except:
                         continue
                 
                 try:
+                    # Última tentativa com parse automático
                     data = pd.to_datetime(valor)
                     if data.tz is None:
                         data = data.tz_localize(self.timezone)
+                    else:
+                        data = data.tz_convert(self.timezone)
                     return data
                 except:
                     logger.warning(f"Não foi possível converter data: {valor}")
-                    return pd.Timestamp.now(tz=self.timezone)
+                    hoje = pd.Timestamp.now(tz=self.timezone)
+                    return hoje.replace(hour=0, minute=0, second=0, microsecond=0)
             
-            df['data_hora'] = df['data_hora'].apply(converter_data)
+            df[campo_data] = df[campo_data].apply(converter_data)
             
             # Trata datas inválidas
-            datas_invalidas = df['data_hora'].isna()
+            datas_invalidas = df[campo_data].isna()
             if datas_invalidas.any():
                 logger.warning(f"Encontradas {datas_invalidas.sum()} datas inválidas")
-                df.loc[datas_invalidas, 'data_hora'] = pd.Timestamp.now(tz=self.timezone)
+                hoje = pd.Timestamp.now(tz=self.timezone)
+                df.loc[datas_invalidas, campo_data] = hoje.replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
             
             return df
             
@@ -166,7 +173,21 @@ class ProcessadorDados:
             logger.error(f"Erro ao processar datas: {str(e)}")
             return df
 
-    def _calcular_kpis(self, df: pd.DataFrame) -> Dict[str, Any]:
+    def _get_day_range(self, date):
+        """Retorna o início e fim do dia para uma data."""
+        # Início do dia (00:00:00.000)
+        start = pd.Timestamp(date).tz_localize(self.timezone).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        
+        # Fim do dia (23:59:59.999999)
+        end = pd.Timestamp(date).tz_localize(self.timezone).replace(
+            hour=23, minute=59, second=59, microsecond=999999
+        )
+        
+        return start, end
+
+    def _calcular_metricas(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Calcula KPIs principais do dashboard."""
         try:
             total_registros = len(df)
@@ -175,11 +196,11 @@ class ProcessadorDados:
                 return self._get_kpis_vazios()
 
             # Status
-            concluidos = df[df['status_atendimento'] == 'Concluído'].shape[0]
-            pendentes = df[df['status_atendimento'] == 'Pendente'].shape[0]
+            status_config = self.config["Status do atendimento:"]
+            concluidos = df[df[status_config["nome_interno"]] == "Concluído"].shape[0]
             taxa_conclusao = (concluidos / total_registros * 100)
             
-            # Tempo médio de atendimento
+            # Tempo médio
             tempo_medio = 0
             try:
                 tempo_medio = df.groupby('funcionario')['data_hora'].agg(
@@ -187,13 +208,12 @@ class ProcessadorDados:
                 ).mean()
             except:
                 logger.warning("Erro ao calcular tempo médio")
-            
+
             return {
                 'total_registros': total_registros,
-                'total_concluidos': concluidos,
-                'total_pendentes': pendentes,
                 'taxa_conclusao': round(taxa_conclusao, 1),
-                'tempo_medio': round(float(tempo_medio if pd.notnull(tempo_medio) else 0), 1)
+                'tempo_medio': round(float(tempo_medio if pd.notnull(tempo_medio) else 0), 1),
+                'total_pendentes': total_registros - concluidos
             }
             
         except Exception as e:
@@ -210,7 +230,9 @@ class ProcessadorDados:
                 'cliente': self._contar_por_coluna(df, 'cliente', 10),
                 'sistema': self._contar_por_coluna(df, 'sistema', 10),
                 'canal': self._contar_por_coluna(df, 'canal_atendimento'),
-                'timeline': self._gerar_timeline(df)
+                'timeline': self._gerar_timeline(df),
+                'relato': self._contar_por_coluna(df, 'solicitacao_cliente', 10),
+                'solicitacao': self._contar_por_coluna(df, 'tipo_atendimento', 10)
             }
             
             logger.debug("Dados dos gráficos gerados com sucesso")
@@ -230,7 +252,6 @@ class ProcessadorDados:
             contagem = df[coluna].value_counts()
             if limite:
                 contagem = contagem.head(limite)
-                
             return {
                 'labels': contagem.index.tolist(),
                 'values': contagem.values.tolist()
@@ -242,8 +263,10 @@ class ProcessadorDados:
     def _gerar_timeline(self, df: pd.DataFrame) -> Dict[str, List]:
         """Gera dados para o gráfico de timeline."""
         try:
-            df['data'] = df['data_hora'].dt.tz_convert(self.timezone).dt.date
+            # Converte para timezone local e extrai apenas a data
+            df['data'] = df['data_hora'].dt.date
             contagem_diaria = df.groupby('data').size()
+            
             return {
                 'labels': [d.strftime('%d/%m/%Y') for d in contagem_diaria.index],
                 'values': contagem_diaria.values.tolist()
@@ -255,20 +278,19 @@ class ProcessadorDados:
     def _get_estrutura_vazia(self) -> Dict[str, Any]:
         """Retorna estrutura vazia do dashboard."""
         return {
-            'registros': [],
             'kpis': self._get_kpis_vazios(),
             'graficos': self._get_graficos_vazios(),
-            'ultima_atualizacao': datetime.now(self.timezone).strftime('%Y-%m-%d %H:%M:%S')
+            'registros': [],
+            'ultima_atualizacao': datetime.now(self.timezone).strftime('%d/%m/%Y %H:%M:%S')
         }
 
     def _get_kpis_vazios(self) -> Dict[str, Any]:
         """Retorna estrutura vazia de KPIs."""
         return {
             'total_registros': 0,
-            'total_concluidos': 0,
-            'total_pendentes': 0,
             'taxa_conclusao': 0.0,
-            'tempo_medio': 0.0
+            'tempo_medio': 0.0,
+            'total_pendentes': 0
         }
 
     def _get_graficos_vazios(self) -> Dict[str, Any]:
@@ -280,5 +302,7 @@ class ProcessadorDados:
             'cliente': {'labels': [], 'values': []},
             'sistema': {'labels': [], 'values': []},
             'canal': {'labels': [], 'values': []},
-            'timeline': {'labels': [], 'values': []}
+            'timeline': {'labels': [], 'values': []},
+            'relato': {'labels': [], 'values': []},
+            'solicitacao': {'labels': [], 'values': []}
         }

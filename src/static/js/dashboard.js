@@ -1,6 +1,7 @@
 class DashboardManager {
     constructor() {
         console.info('Inicializando DashboardManager');
+        this.timezone = 'America/Sao_Paulo';
         this.initializeComponents();
         this.setupEventListeners();
     }
@@ -72,16 +73,18 @@ class DashboardManager {
 
         try {
             if (elements.totalAtendimentos) {
-                elements.totalAtendimentos.textContent = (kpis.total_registros || 0).toLocaleString();
+                elements.totalAtendimentos.textContent = Number(kpis.total_registros || 0).toLocaleString();
             }
             if (elements.totalPendentes) {
-                elements.totalPendentes.textContent = (kpis.total_pendentes || 0).toLocaleString();
+                elements.totalPendentes.textContent = Number(kpis.total_pendentes || 0).toLocaleString();
             }
             if (elements.totalConcluidos) {
-                elements.totalConcluidos.textContent = (kpis.total_concluidos || 0).toLocaleString();
+                elements.totalConcluidos.textContent = Number(kpis.total_concluidos || 0).toLocaleString();
             }
             if (elements.taxaConclusao) {
-                elements.taxaConclusao.textContent = `${(kpis.taxa_conclusao || 0).toFixed(1)}%`;
+                // Garante que taxa_conclusao seja tratada como número
+                const taxa = Number(kpis.taxa_conclusao || 0);
+                elements.taxaConclusao.textContent = `${taxa.toFixed(1)}%`;
             }
         } catch (error) {
             console.error('Erro ao atualizar KPIs:', error);
@@ -92,8 +95,19 @@ class DashboardManager {
         const element = document.getElementById('lastUpdate');
         if (element && timestamp) {
             try {
+                // Converte para timezone local (Brasil)
                 const date = new Date(timestamp);
-                element.textContent = date.toLocaleString('pt-BR');
+                const options = {
+                    timeZone: this.timezone,
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                };
+                element.textContent = new Intl.DateTimeFormat('pt-BR', options).format(date);
             } catch (error) {
                 console.error('Erro ao formatar timestamp:', error);
                 element.textContent = timestamp;

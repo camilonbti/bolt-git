@@ -1,4 +1,3 @@
-// src/static/js/data.js
 class DashboardDataManager {
     constructor() {
         console.info('Inicializando DashboardDataManager');
@@ -6,9 +5,9 @@ class DashboardDataManager {
             registros: [],
             kpis: {
                 total_registros: 0,
-                total_concluidos: 0,
                 total_pendentes: 0,
-                taxa_conclusao: 0
+                taxa_conclusao: 0,
+                tempo_medio: 0
             },
             graficos: {
                 status: { labels: [], values: [] },
@@ -16,9 +15,11 @@ class DashboardDataManager {
                 funcionario: { labels: [], values: [] },
                 cliente: { labels: [], values: [] },
                 sistema: { labels: [], values: [] },
-                canal: { labels: [], values: [] }
+                canal: { labels: [], values: [] },
+                relato: { labels: [], values: [] },
+                solicitacao: { labels: [], values: [] }
             },
-            ultima_atualizacao: new Date().toISOString()
+            ultima_atualizacao: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
         };
         
         this.setupEventListeners();
@@ -31,7 +32,7 @@ class DashboardDataManager {
         document.addEventListener('filterChange', (event) => {
             console.info('Evento de mudança de filtro recebido:', {
                 filtros: event.detail,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
             });
             this.applyFilters(event.detail);
         });
@@ -58,7 +59,7 @@ class DashboardDataManager {
             this.data = data;
             console.info('Dados iniciais carregados:', {
                 registros: data.registros.length,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
             });
 
             document.dispatchEvent(new CustomEvent('dashboardUpdate', { 
@@ -101,7 +102,6 @@ class DashboardDataManager {
                 filtrosAtivos: Object.keys(filters).length
             });
 
-            // Dispara evento com dados atualizados
             document.dispatchEvent(new CustomEvent('dashboardUpdate', { 
                 detail: updatedData 
             }));
@@ -152,8 +152,13 @@ class DashboardDataManager {
                 return true;
             }
 
-            endDate.setHours(23, 59, 59, 999);
-            return dataRegistro >= startDate && dataRegistro <= endDate;
+            // Ajusta para timezone local (America/Sao_Paulo)
+            const options = { timeZone: 'America/Sao_Paulo' };
+            const dataRegistroLocal = new Date(dataRegistro.toLocaleString('en-US', options));
+            const startDateLocal = new Date(startDate.toLocaleString('en-US', options));
+            const endDateLocal = new Date(endDate.toLocaleString('en-US', options));
+
+            return dataRegistroLocal >= startDateLocal && dataRegistroLocal <= endDateLocal;
         } catch (error) {
             console.error('Erro ao filtrar por período:', error);
             return true;
@@ -167,7 +172,9 @@ class DashboardDataManager {
             'funcionario': 'funcionario',
             'cliente': 'cliente',
             'sistema': 'sistema',
-            'canal': 'canal_atendimento'
+            'canal': 'canal_atendimento',
+            'relato': 'solicitacao_cliente',
+            'solicitacao': 'tipo_atendimento'
         };
         
         return registro[mapeamento[tipo] || tipo] || '';
@@ -175,14 +182,13 @@ class DashboardDataManager {
 
     #calcularKPIs(registros) {
         const total = registros.length;
-        const concluidos = registros.filter(r => r.status_atendimento === 'Concluído').length;
         const pendentes = registros.filter(r => r.status_atendimento === 'Pendente').length;
+        const taxa_conclusao = total > 0 ? ((total - pendentes) / total * 100) : 0;
         
         return {
             total_registros: total,
-            total_concluidos: concluidos,
             total_pendentes: pendentes,
-            taxa_conclusao: total > 0 ? (concluidos / total * 100).toFixed(1) : 0
+            taxa_conclusao: taxa_conclusao.toFixed(1)
         };
     }
 
@@ -193,7 +199,9 @@ class DashboardDataManager {
             funcionario: this.#contarValores(registros, 'funcionario'),
             cliente: this.#contarValores(registros, 'cliente'),
             sistema: this.#contarValores(registros, 'sistema'),
-            canal: this.#contarValores(registros, 'canal_atendimento')
+            canal: this.#contarValores(registros, 'canal_atendimento'),
+            relato: this.#contarValores(registros, 'solicitacao_cliente'),
+            solicitacao: this.#contarValores(registros, 'tipo_atendimento')
         };
     }
 

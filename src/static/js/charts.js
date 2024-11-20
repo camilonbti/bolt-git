@@ -1,4 +1,3 @@
-// src/static/js/charts.js
 class ChartManager {
     constructor() {
         console.info('Inicializando ChartManager');
@@ -130,6 +129,36 @@ class ChartManager {
                     grid: { display: false }
                 },
                 x: {
+                    grid: { display: false }
+                }
+            }
+        });
+
+        // Relato (Bar)
+        this.createChart('relato', 'bar', {
+            ...commonOptions,
+            indexAxis: 'y',
+            scales: {
+                x: { 
+                    beginAtZero: true,
+                    grid: { display: false }
+                },
+                y: {
+                    grid: { display: false }
+                }
+            }
+        });
+
+        // Solicitação (Bar)
+        this.createChart('solicitacao', 'bar', {
+            ...commonOptions,
+            indexAxis: 'y',
+            scales: {
+                x: { 
+                    beginAtZero: true,
+                    grid: { display: false }
+                },
+                y: {
                     grid: { display: false }
                 }
             }
