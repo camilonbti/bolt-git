@@ -1,22 +1,28 @@
+// src/static/js/data.js
 class DashboardDataManager {
     constructor() {
         console.info('Inicializando DashboardDataManager');
+        this.data = {
+            registros: [],
+            kpis: {
+                total_registros: 0,
+                total_concluidos: 0,
+                total_pendentes: 0,
+                taxa_conclusao: 0
+            },
+            graficos: {
+                status: { labels: [], values: [] },
+                tipo: { labels: [], values: [] },
+                funcionario: { labels: [], values: [] },
+                cliente: { labels: [], values: [] },
+                sistema: { labels: [], values: [] },
+                canal: { labels: [], values: [] }
+            },
+            ultima_atualizacao: new Date().toISOString()
+        };
         
-        // Verifica se o dataset foi injetado corretamente
-        if (typeof ATENDIMENTOS_DATASET === 'undefined') {
-            console.error('Dataset não encontrado');
-            this.data = [];
-        } else {
-            console.info('Dataset carregado com sucesso:', {
-                registros: ATENDIMENTOS_DATASET.length,
-                primeiroRegistro: ATENDIMENTOS_DATASET[0],
-                ultimoRegistro: ATENDIMENTOS_DATASET[ATENDIMENTOS_DATASET.length - 1]
-            });
-            this.data = ATENDIMENTOS_DATASET;
-        }
-
         this.setupEventListeners();
-        this.initializePeriodFilter();
+        this.loadInitialData();
     }
 
     setupEventListeners() {
@@ -29,70 +35,89 @@ class DashboardDataManager {
             });
             this.applyFilters(event.detail);
         });
+    }
 
-        document.addEventListener('dashboardUpdate', (event) => {
-            console.info('Evento de atualização do dashboard recebido:', {
-                dados: event.detail,
+    async loadInitialData() {
+        try {
+            const loadingState = document.getElementById('loadingState');
+            const dashboardContent = document.getElementById('dashboardContent');
+
+            if (loadingState) loadingState.classList.remove('d-none');
+            if (dashboardContent) dashboardContent.classList.add('d-none');
+
+            const response = await fetch('/api/data');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (!data || !data.registros) {
+                throw new Error('Dados inválidos recebidos do servidor');
+            }
+
+            this.data = data;
+            console.info('Dados iniciais carregados:', {
+                registros: data.registros.length,
                 timestamp: new Date().toISOString()
             });
-        });
-    }
 
-    initializePeriodFilter() {
-        console.debug('Inicializando filtro de período');
-        
-        if (this.data.length === 0) {
-            console.warn('Sem dados para inicializar filtro de período');
-            return;
+            document.dispatchEvent(new CustomEvent('dashboardUpdate', { 
+                detail: this.data 
+            }));
+
+            if (loadingState) loadingState.classList.add('d-none');
+            if (dashboardContent) dashboardContent.classList.remove('d-none');
+
+        } catch (error) {
+            console.error('Erro ao carregar dados iniciais:', error);
+            if (loadingState) loadingState.classList.add('d-none');
+            this.showError('Erro ao carregar dados iniciais');
         }
-
-        // Encontra a data mais antiga e mais recente no dataset
-        const dates = this.data.map(item => new Date(item.data_hora));
-        const minDate = new Date(Math.min(...dates));
-        const maxDate = new Date(Math.max(...dates));
-
-        console.info('Período inicial definido:', {
-            inicio: minDate.toISOString(),
-            fim: maxDate.toISOString()
-        });
-
-        this.applyFilters({
-            period: {
-                start: this.#formatDate(minDate),
-                end: this.#formatDate(maxDate)
-            }
-        });
-    }
-
-    #formatDate(date) {
-        return date.toISOString().split('T')[0];
     }
 
     applyFilters(filters) {
         console.debug('Aplicando filtros:', filters);
         
         try {
-            const filteredData = this.#filterData(this.data, filters);
+            if (!this.data || !this.data.registros) {
+                console.warn('Dados não disponíveis para filtrar');
+                return;
+            }
+
+            // Filtra os registros
+            const filteredRegistros = this.#filterData(this.data.registros, filters);
             
+            // Recalcula KPIs e gráficos com os dados filtrados
+            const updatedData = {
+                registros: filteredRegistros,
+                kpis: this.#calcularKPIs(filteredRegistros),
+                graficos: this.#calcularGraficos(filteredRegistros),
+                ultima_atualizacao: this.data.ultima_atualizacao
+            };
+
             console.info('Dados filtrados:', {
-                antes: this.data.length,
-                depois: filteredData.length,
+                antes: this.data.registros.length,
+                depois: filteredRegistros.length,
                 filtrosAtivos: Object.keys(filters).length
             });
 
-            this.#updateDashboard(filteredData);
+            // Dispara evento com dados atualizados
+            document.dispatchEvent(new CustomEvent('dashboardUpdate', { 
+                detail: updatedData 
+            }));
             
         } catch (error) {
             console.error('Erro ao aplicar filtros:', error);
+            this.showError('Erro ao aplicar filtros');
         }
     }
 
-    #filterData(data, filters) {
+    #filterData(registros, filters) {
         if (!filters || Object.keys(filters).length === 0) {
-            return data;
+            return registros;
         }
 
-        return data.filter(registro => {
+        return registros.filter(registro => {
             return Object.entries(filters).every(([tipo, valores]) => {
                 if (!valores || (Array.isArray(valores) && valores.length === 0)) {
                     return true;
@@ -148,36 +173,16 @@ class DashboardDataManager {
         return registro[mapeamento[tipo] || tipo] || '';
     }
 
-    #updateDashboard(filteredData) {
-        console.debug('Atualizando dashboard com dados filtrados');
-        
-        const dashboardData = {
-            registros: filteredData,
-            kpis: this.#calcularKPIs(filteredData),
-            graficos: this.#calcularGraficos(filteredData),
-            ultima_atualizacao: new Date().toISOString()
-        };
-
-        console.info('Dashboard atualizado:', {
-            totalRegistros: filteredData.length,
-            kpis: dashboardData.kpis,
-            timestamp: dashboardData.ultima_atualizacao
-        });
-
-        document.dispatchEvent(new CustomEvent('dashboardUpdate', { 
-            detail: dashboardData 
-        }));
-    }
-
     #calcularKPIs(registros) {
         const total = registros.length;
         const concluidos = registros.filter(r => r.status_atendimento === 'Concluído').length;
+        const pendentes = registros.filter(r => r.status_atendimento === 'Pendente').length;
         
         return {
             total_registros: total,
             total_concluidos: concluidos,
-            total_pendentes: total - concluidos,
-            taxa_conclusao: total > 0 ? (concluidos / total * 100) : 0
+            total_pendentes: pendentes,
+            taxa_conclusao: total > 0 ? (concluidos / total * 100).toFixed(1) : 0
         };
     }
 
@@ -209,10 +214,29 @@ class DashboardDataManager {
         };
     }
 
+    showError(message) {
+        const errorAlert = document.getElementById('updateError');
+        if (errorAlert) {
+            const errorMessage = errorAlert.querySelector('.error-message');
+            if (errorMessage) {
+                errorMessage.textContent = message;
+            }
+            errorAlert.classList.remove('d-none');
+            setTimeout(() => {
+                errorAlert.classList.add('d-none');
+            }, 5000);
+        }
+    }
+
     update(newData) {
+        if (!newData || !newData.registros) {
+            console.error('Dados inválidos para atualização');
+            return;
+        }
+
         console.info('Atualizando dados do dashboard:', {
-            dadosAntigos: this.data.length,
-            dadosNovos: newData.length
+            dadosAntigos: this.data.registros.length,
+            dadosNovos: newData.registros.length
         });
         
         this.data = newData;

@@ -1,3 +1,4 @@
+// src/static/js/table.js
 class TableManager {
     constructor() {
         this.table = document.getElementById('tableBody');
@@ -11,7 +12,6 @@ class TableManager {
         }
 
         this.setupEventListeners();
-        this.loadInitialData();
     }
 
     setupEventListeners() {
@@ -29,20 +29,13 @@ class TableManager {
             const data = window.dashboardManager?.dataManager?.data?.registros || [];
             this.updateTable(data);
         });
-    }
 
-    loadInitialData() {
-        const dashboardData = document.getElementById('dashboardData');
-        if (dashboardData) {
-            try {
-                const data = JSON.parse(dashboardData.textContent);
-                if (data && data.registros) {
-                    this.updateTable(data.registros);
-                }
-            } catch (error) {
-                console.error('Erro ao carregar dados iniciais:', error);
+        // Listener para atualização do dashboard
+        document.addEventListener('dashboardUpdate', (event) => {
+            if (event.detail && Array.isArray(event.detail.registros)) {
+                this.updateTable(event.detail.registros);
             }
-        }
+        });
     }
 
     formatDate(dateStr) {

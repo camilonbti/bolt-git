@@ -1,9 +1,23 @@
+// src/static/js/charts.js
 class ChartManager {
     constructor() {
         console.info('Inicializando ChartManager');
         this.charts = {};
         this.colorPalette = new ColorPaletteManager();
         this.initCharts();
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        document.addEventListener('dashboardUpdate', (event) => {
+            if (event.detail && event.detail.graficos) {
+                this.updateCharts(event.detail.graficos);
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            this.resizeCharts();
+        });
     }
 
     initCharts() {
@@ -45,7 +59,7 @@ class ChartManager {
                     position: 'right'
                 }
             }
-        });
+        }, this.colorPalette.getStatusColors());
 
         // Tipo de Atendimento (Bar horizontal)
         this.createChart('tipo', 'bar', {
@@ -122,7 +136,7 @@ class ChartManager {
         });
     }
 
-    createChart(type, chartType, options) {
+    createChart(type, chartType, options, customColors = null) {
         const elementId = `${type}Chart`;
         const canvas = document.getElementById(elementId);
         
@@ -132,7 +146,7 @@ class ChartManager {
         }
 
         const ctx = canvas.getContext('2d');
-        const colors = this.colorPalette.getChartColors(10);
+        const colors = customColors || this.colorPalette.getChartColors(10);
 
         this.charts[type] = new Chart(ctx, {
             type: chartType,
@@ -166,13 +180,13 @@ class ChartManager {
     }
 
     updateCharts(data) {
+        console.debug('Atualizando gráficos com dados:', data);
+        
         if (!data) {
             console.error('Dados inválidos para atualização dos gráficos');
             return;
         }
 
-        console.debug('Atualizando gráficos com dados:', data);
-        
         Object.entries(this.charts).forEach(([type, chart]) => {
             const chartData = data[type];
             if (!chartData || !chartData.labels || !chartData.values) {

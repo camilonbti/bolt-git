@@ -30,18 +30,6 @@ class DashboardManager {
             console.debug('Evento de atualização recebido');
             this.updateDashboard(event.detail);
         });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            this.loadInitialData();
-        });
-    }
-
-    loadInitialData() {
-        console.debug('Carregando dados iniciais');
-        const data = this.dataManager?.data;
-        if (data) {
-            this.updateDashboard(data);
-        }
     }
 
     updateDashboard(data) {

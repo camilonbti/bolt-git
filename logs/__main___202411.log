@@ -1,3 +1,24 @@
 [2024-11-20 13:42:58] INFO     [__main__:index:20] Iniciando carregamento do dashboard
 [2024-11-20 13:43:00] INFO     [__main__:index:27] Dados obtidos: 491 linhas
 [2024-11-20 13:43:00] INFO     [__main__:index:31] Dataset JS formatado com sucesso
+[2024-11-20 14:02:24] INFO     [__main__:index:19] Iniciando carregamento do dashboard
+[2024-11-20 14:02:24] INFO     [__main__:get_data:33] Iniciando carregamento de dados via API
+[2024-11-20 14:02:27] INFO     [__main__:get_data:41] Dados processados com sucesso
+[2024-11-20 14:04:44] INFO     [__main__:index:19] Iniciando carregamento do dashboard
+[2024-11-20 14:04:44] INFO     [__main__:get_data:33] Iniciando carregamento de dados via API
+[2024-11-20 14:04:46] INFO     [__main__:get_data:41] Dados processados com sucesso
+[2024-11-20 14:10:08] INFO     [__main__:index:19] Iniciando carregamento do dashboard
+[2024-11-20 14:10:08] INFO     [__main__:get_data:33] Iniciando carregamento de dados via API
+[2024-11-20 14:10:11] INFO     [__main__:get_data:41] Dados processados com sucesso
+[2024-11-20 14:14:41] INFO     [__main__:index:19] Iniciando carregamento do dashboard
+[2024-11-20 14:14:41] INFO     [__main__:get_data:33] Iniciando carregamento de dados via API
+[2024-11-20 14:14:43] INFO     [__main__:get_data:41] Dados processados com sucesso
+[2024-11-20 14:23:12] INFO     [__main__:index:19] Iniciando carregamento do dashboard
+[2024-11-20 14:23:12] INFO     [__main__:get_data:33] Iniciando carregamento de dados via API
+[2024-11-20 14:23:14] INFO     [__main__:get_data:41] Dados processados com sucesso
+[2024-11-20 14:24:38] INFO     [__main__:index:19] Iniciando carregamento do dashboard
+[2024-11-20 14:24:38] INFO     [__main__:get_data:33] Iniciando carregamento de dados via API
+[2024-11-20 14:24:40] INFO     [__main__:get_data:41] Dados processados com sucesso
+[2024-11-20 14:25:28] INFO     [__main__:index:19] Iniciando carregamento do dashboard
+[2024-11-20 14:25:28] INFO     [__main__:get_data:33] Iniciando carregamento de dados via API
+[2024-11-20 14:25:30] INFO     [__main__:get_data:41] Dados processados com sucesso
