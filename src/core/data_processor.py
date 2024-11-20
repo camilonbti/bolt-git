@@ -2,19 +2,14 @@
 Processador de dados para o dashboard
 """
 from typing import Dict, List, Any
-import pandas as pd
 from datetime import datetime, time
+import pandas as pd
 import logging
-from ..config.campos_config import (
-    CAMPOS_CONFIGURACAO,
-    MAPEAMENTO_COLUNAS,
-    get_mapeamento_colunas,
-    get_valores_default,
-    validar_cabecalho
-)
+from ..config.campos_config import CAMPOS_CONFIGURACAO, get_mapeamento_colunas, get_valores_default
 from zoneinfo import ZoneInfo
+from .logger import log_manager
 
-logger = logging.getLogger(__name__)
+logger = log_manager.get_logger(__name__)
 
 class ProcessadorDados:
     def __init__(self, config=None):
@@ -30,12 +25,6 @@ class ProcessadorDados:
             if not dados_brutos or len(dados_brutos) < 2:
                 logger.warning("Dados brutos vazios ou insuficientes")
                 return self._get_estrutura_vazia()
-
-            # Valida o cabeçalho
-            cabecalho = dados_brutos[0]
-            if not validar_cabecalho(cabecalho):
-                logger.error("Cabeçalho da planilha não corresponde ao mapeamento configurado")
-                raise ValueError("Estrutura da planilha inválida")
                 
             df = self._criar_dataframe(dados_brutos)
             if df.empty:
@@ -73,6 +62,7 @@ class ProcessadorDados:
             
             logger.debug(f"DataFrame criado com {len(df)} linhas")
             return df
+            
         except Exception as e:
             logger.error(f"Erro ao criar DataFrame: {str(e)}")
             return pd.DataFrame()
@@ -93,6 +83,14 @@ class ProcessadorDados:
             if "valores_permitidos" in status_config:
                 status_validos = status_config["valores_permitidos"]
                 df.loc[~df['status_atendimento'].isin(status_validos), 'status_atendimento'] = status_config["valor_default"]
+            
+            # Validação de campos obrigatórios
+            for campo, config in self.config.items():
+                nome_interno = config["nome_interno"]
+                if config.get("obrigatorio", False):
+                    invalidos = df[nome_interno].isin(['', None, 'nan', 'NaN', 'null'])
+                    if invalidos.any():
+                        df.loc[invalidos, nome_interno] = config["valor_default"]
             
             return df
             
@@ -252,6 +250,7 @@ class ProcessadorDados:
             contagem = df[coluna].value_counts()
             if limite:
                 contagem = contagem.head(limite)
+                
             return {
                 'labels': contagem.index.tolist(),
                 'values': contagem.values.tolist()
@@ -264,7 +263,7 @@ class ProcessadorDados:
         """Gera dados para o gráfico de timeline."""
         try:
             # Converte para timezone local e extrai apenas a data
-            df['data'] = df['data_hora'].dt.date
+            df['data'] = df['data_hora'].dt.tz_convert(self.timezone).dt.date
             contagem_diaria = df.groupby('data').size()
             
             return {

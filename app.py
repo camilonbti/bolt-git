@@ -2,14 +2,18 @@ from flask import Flask, render_template, jsonify
 from src.core.sheets_client import GoogleSheetsClient
 from src.core.data_processor import ProcessadorDados
 from src.config.campos_config import CAMPOS_CONFIGURACAO
-from src.core.logger import log_manager
+from src.config.logging_config import setup_logging
+import logging
+
+# Configura logging
+setup_logging()
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__, 
     template_folder='src/templates',
     static_folder='src/static'
 )
 
-logger = log_manager.get_logger(__name__)
 processador = ProcessadorDados(CAMPOS_CONFIGURACAO)
 
 @app.route('/')

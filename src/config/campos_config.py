@@ -7,6 +7,22 @@ from zoneinfo import ZoneInfo
 # Timezone padrão
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
 
+# Configuração do Google Sheets
+GOOGLE_SHEETS_CONFIG = {
+    "credentials_path": "credentials.json",
+    "sheet_url": "https://docs.google.com/spreadsheets/d/1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc/edit?usp=sharing",
+    "scopes": [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ],
+    "default_range": "Sheet1!A1:Z1000",
+    "update_interval": 300,  # 5 minutos
+    "timezone": TIMEZONE,
+    "date_format": "%d/%m/%Y %H:%M:%S",
+    "default_start_time": "00:00:00",
+    "default_end_time": "23:59:59.999999"
+}
+
 # Mapeamento de nomes das colunas da planilha para nomes internos
 MAPEAMENTO_COLUNAS = {
     'Carimbo de data/hora': 'data_hora',
@@ -15,7 +31,6 @@ MAPEAMENTO_COLUNAS = {
     'Nome do solicitante:': 'solicitante',
     'Relato do pedido de atendimento:': 'solicitacao_cliente',
     'Relato mais detalhado do pedido do cliente:': 'descricao_atendimento',
-    'Descrição do atendimento realizado:': 'descricao_realizado',
     'Status do atendimento:': 'status_atendimento',
     'Tipo do atendimento solicitado:': 'tipo_atendimento',
     'Sistema do cliente:': 'sistema',
@@ -30,7 +45,6 @@ VALORES_DEFAULT = {
     'solicitante': 'Não informado',
     'solicitacao_cliente': 'Sem relato',
     'descricao_atendimento': 'Sem descrição detalhada',
-    'descricao_realizado': 'Sem descrição do atendimento',
     'status_atendimento': 'Pendente',
     'tipo_atendimento': 'Não categorizado',
     'sistema': 'Não especificado',
@@ -97,15 +111,6 @@ CAMPOS_CONFIGURACAO = {
         "valor_default": VALORES_DEFAULT['descricao_atendimento'],
         "permite_filtro": False,
         "label": "Descrição Detalhada",
-        "visivel": True
-    },
-    "Descrição do atendimento realizado:": {
-        "nome_interno": "descricao_realizado",
-        "tipo": "string",
-        "obrigatorio": False,
-        "valor_default": VALORES_DEFAULT['descricao_realizado'],
-        "permite_filtro": False,
-        "label": "Descrição do Atendimento",
         "visivel": True
     },
     "Status do atendimento:": {

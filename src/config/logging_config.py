@@ -1,9 +1,8 @@
 """
-Configuração otimizada de logs para depuração
+Configuração centralizada de logging
 """
-import os
 import logging
-from logging.handlers import RotatingFileHandler
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -12,44 +11,38 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 LOG_DIR = os.path.join(BASE_DIR, 'logs')
 os.makedirs(LOG_DIR, exist_ok=True)
 
-# Formatos de log otimizados
-FORMATO_ARQUIVO = (
-    '%(asctime)s | %(levelname)-8s | %(name)s | '
-    'L%(lineno)d | %(funcName)s | %(message)s'
+# Formato detalhado para arquivo
+FILE_FORMAT = logging.Formatter(
+    '[%(asctime)s] %(levelname)-8s [%(name)s:%(funcName)s:%(lineno)d] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-FORMATO_CONSOLE = (
-    '%(asctime)s | %(levelname)-8s | %(name)s | '
-    '%(message)s'
+# Formato simplificado para console
+CONSOLE_FORMAT = logging.Formatter(
+    '[%(asctime)s] %(levelname)-8s [%(name)s] %(message)s',
+    datefmt='%H:%M:%S'
 )
 
-def get_logger(nome_logger, nivel=logging.INFO):
-    """Configura logger otimizado para depuração."""
-    logger = logging.getLogger(nome_logger)
-    logger.setLevel(nivel)
-    
-    if logger.handlers:
-        return logger
+def setup_logging():
+    """Configura o sistema de logging."""
+    # Configuração raiz
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
     
     # Handler para arquivo
-    nome_arquivo = f"{nome_logger}_{datetime.now().strftime('%Y%m')}.log"
-    arquivo_log = os.path.join(LOG_DIR, nome_arquivo)
-    
-    file_handler = RotatingFileHandler(
-        arquivo_log,
-        maxBytes=5 * 1024 * 1024,  # 5 MB
-        backupCount=5,
-        encoding='utf-8'
-    )
+    log_file = os.path.join(LOG_DIR, f'app_{datetime.now():%Y%m}.log')
+    file_handler = logging.FileHandler(log_file, encoding='utf-8')
+    file_handler.setFormatter(FILE_FORMAT)
     file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(logging.Formatter(FORMATO_ARQUIVO))
     
     # Handler para console
     console_handler = logging.StreamHandler()
+    console_handler.setFormatter(CONSOLE_FORMAT)
     console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(logging.Formatter(FORMATO_CONSOLE))
     
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+    # Adiciona handlers
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(console_handler)
     
-    return logger
+    # Evita propagação duplicada
+    root_logger.propagate = False

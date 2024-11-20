@@ -4,15 +4,14 @@ Cliente para integração com Google Sheets
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from .logger import log_manager
 from ..config.campos_config import (
     GOOGLE_SHEETS_CONFIG, 
     validar_cabecalho,
     get_mapeamento_colunas
 )
-import json
+import logging
 
-logger = log_manager.get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class GoogleSheetsClient:
     def __init__(self):
@@ -122,7 +121,6 @@ class GoogleSheetsClient:
                 raise ValueError("Estrutura da planilha inválida")
             
             logger.info(f"Dados lidos com sucesso. Total de linhas: {total_linhas}")
-            logger.debug(f"Amostra dos dados: {json.dumps(dados[0], ensure_ascii=False)}")
             
             return dados
             
