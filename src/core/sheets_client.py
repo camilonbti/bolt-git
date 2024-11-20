@@ -11,9 +11,7 @@ from ..config.campos_config import (
 )
 from ..utils.date_utils import (
     TIMEZONE,
-    format_date_range,
     format_timestamp,
-    format_display_date,
     get_current_time
 )
 import logging
@@ -77,20 +75,7 @@ class GoogleSheetsClient:
             raise RuntimeError(error_msg)
 
     def ler_planilha(self, range_name=None):
-        """
-        Lê dados da planilha do Google Sheets.
-        
-        Args:
-            range_name: Range específico para leitura (opcional)
-            
-        Returns:
-            Lista de linhas da planilha
-            
-        Raises:
-            HttpError: Erro de comunicação com a API
-            RuntimeError: Outros erros durante a leitura
-            ValueError: Estrutura da planilha inválida
-        """
+        """Lê dados da planilha do Google Sheets."""
         try:
             range_name = range_name or self.config["default_range"]
             logger.info(f"Iniciando leitura do range: {range_name}")
@@ -127,16 +112,12 @@ class GoogleSheetsClient:
                 logger.error(error_msg)
                 raise ValueError("Estrutura da planilha inválida")
             
-            # Processa datas no formato correto
+            # Log das primeiras linhas para debug do campo data_hora
             if len(dados) > 1:
-                for linha in dados[1:]:
-                    if len(linha) > 0:  # Coluna de data é a primeira
-                        try:
-                            data = format_date_range(linha[0], date_only=True)
-                            linha[0] = format_display_date(data)
-                        except:
-                            logger.warning(f"Erro ao processar data: {linha[0]}")
-                            linha[0] = format_display_date(get_current_time())
+                logger.debug("Primeiras 5 linhas da planilha:")
+                for i, linha in enumerate(dados[1:6]):
+                    if len(linha) > 0:
+                        logger.debug(f"Linha {i+1} - data_hora bruto: {linha[0]}")
             
             logger.info(f"Dados lidos com sucesso. Total de linhas: {total_linhas}")
             return dados
@@ -144,7 +125,7 @@ class GoogleSheetsClient:
         except HttpError as e:
             error_msg = f"Erro de API do Google Sheets: {str(e)}"
             logger.error(error_msg, exc_info=True)
-            raise HttpError(e.resp, e.content)
+            raise
         except ValueError as e:
             error_msg = f"Erro de estrutura da planilha: {str(e)}"
             logger.error(error_msg, exc_info=True)

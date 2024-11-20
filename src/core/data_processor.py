@@ -5,6 +5,7 @@ from typing import Dict, List, Any, Optional
 import pandas as pd
 import numpy as np
 import logging
+from datetime import datetime
 from ..config.campos_config import (
     CAMPOS_CONFIGURACAO,
     get_mapeamento_colunas,
@@ -33,56 +34,58 @@ class ProcessadorDados:
         logger.debug("ProcessadorDados inicializado com sucesso")
 
     def processar_dados(self, dados_brutos: List[List]) -> Dict[str, Any]:
-        """
-        Processa dados brutos e retorna estrutura completa para o dashboard.
-        
-        Args:
-            dados_brutos: Lista de linhas de dados
-            
-        Returns:
-            Dict com dados processados, KPIs e gráficos
-        """
+        """Processa dados brutos e retorna estrutura completa para o dashboard."""
         try:
             if not dados_brutos or len(dados_brutos) < 2:
                 logger.warning("Dados brutos vazios ou insuficientes")
                 return self._get_estrutura_vazia()
 
+            # Debug: Mostrar primeiras linhas dos dados brutos
+            logger.debug("Primeiras 5 linhas dos dados brutos:")
+            for i, linha in enumerate(dados_brutos[1:6]):
+                if len(linha) > 0:
+                    logger.debug(f"Linha {i+1} - data_hora bruto: {linha[0]}")
+
             # Cria DataFrame inicial
             df = pd.DataFrame(dados_brutos[1:], columns=dados_brutos[0])
             df = df.rename(columns=self.mapeamento_colunas)
             
-            if df.empty:
-                logger.warning("DataFrame vazio após processamento inicial")
-                return self._get_estrutura_vazia()
+            # Debug: Mostrar dados do campo data_hora após criar DataFrame
+            if 'data_hora' in df.columns:
+                logger.debug("Valores de data_hora após criar DataFrame:")
+                logger.debug(df['data_hora'].head().to_list())
 
-            # Pipeline de processamento
+            # Aplica valores default e validações para cada campo
             df = self._processar_campos(df)
-            df = self._processar_datas(df)
-            df = self._aplicar_transformacoes(df)
+            
+            # Debug: Mostrar dados após processar campos
+            if 'data_hora' in df.columns:
+                logger.debug("Valores de data_hora após processar campos:")
+                logger.debug(df['data_hora'].head().to_list())
 
-            # Gera resultados
-            metricas = self._calcular_metricas(df)
-            graficos = self._gerar_dados_graficos(df)
+            # Processa datas com tratamento de erro específico
+            df = self._processar_datas(df)
             
-            # Converte datas para timestamp em milissegundos
-            df_serializable = df.copy()
-            if 'data_hora' in df_serializable.columns:
-                df_serializable['data_hora'] = df_serializable['data_hora'].apply(
-                    lambda x: format_timestamp(x) if pd.notnull(x) else None
-                )
-            
-            registros = df_serializable.to_dict('records')
+            # Debug: Mostrar dados após processar datas
+            if 'data_hora' in df.columns:
+                logger.debug("Valores de data_hora após processar datas:")
+                logger.debug(df['data_hora'].head().to_list())
 
             resultado = {
-                'kpis': metricas,
-                'graficos': graficos,
-                'registros': registros,
+                'kpis': self._calcular_kpis(df),
+                'graficos': self._gerar_dados_graficos(df),
+                'registros': df.to_dict('records'),
                 'ultima_atualizacao': format_timestamp(get_current_time())
             }
+            
+            # Debug: Mostrar amostra dos registros finais
+            logger.debug("Amostra dos registros finais:")
+            for i, registro in enumerate(resultado['registros'][:5]):
+                logger.debug(f"Registro {i+1} - data_hora: {registro.get('data_hora')}")
 
-            logger.info(f"Dados processados: {len(registros)} registros")
+            logger.info(f"Dados processados: {len(resultado['registros'])} registros")
             return resultado
-
+            
         except Exception as e:
             logger.error(f"Erro ao processar dados: {str(e)}", exc_info=True)
             return self._get_estrutura_vazia()
@@ -99,18 +102,28 @@ class ProcessadorDados:
                     df_processado[nome_interno] = config["valor_default"]
                     continue
                 
+                # Debug: Mostrar valores antes de processar se for data_hora
+                if nome_interno == 'data_hora':
+                    logger.debug(f"Valores de {nome_interno} antes de processar:")
+                    logger.debug(df_processado[nome_interno].head().to_list())
+                
                 # Aplica valor default para valores nulos
                 df_processado[nome_interno] = df_processado[nome_interno].fillna(config["valor_default"])
                 
                 # Validação específica para campos obrigatórios
                 if config.get("obrigatorio", False):
-                    mascara_invalidos = df_processado[nome_interno].isin(['', None, 'nan', 'NaN', 'null'])
-                    df_processado.loc[mascara_invalidos, nome_interno] = config["valor_default"]
+                    invalidos = df_processado[nome_interno].isin(['', None, 'nan', 'NaN', 'null'])
+                    df_processado.loc[invalidos, nome_interno] = config["valor_default"]
                 
                 # Validação de valores permitidos
                 if "valores_permitidos" in config:
-                    mascara_invalidos = ~df_processado[nome_interno].isin(config["valores_permitidos"])
-                    df_processado.loc[mascara_invalidos, nome_interno] = config["valor_default"]
+                    invalidos = ~df_processado[nome_interno].isin(config["valores_permitidos"])
+                    df_processado.loc[invalidos, nome_interno] = config["valor_default"]
+                
+                # Debug: Mostrar valores após processar se for data_hora
+                if nome_interno == 'data_hora':
+                    logger.debug(f"Valores de {nome_interno} após processar:")
+                    logger.debug(df_processado[nome_interno].head().to_list())
             
             return df_processado
             
@@ -119,7 +132,7 @@ class ProcessadorDados:
             return df
 
     def _processar_datas(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Processa campos de data com tratamento de erro robusto."""
+        """Processa campos de data preservando a hora."""
         try:
             df_processado = df.copy()
             data_config = self.config["Carimbo de data/hora"]
@@ -131,44 +144,45 @@ class ProcessadorDados:
             
             def converter_data(valor):
                 if pd.isna(valor) or valor == data_config["valor_default"]:
-                    return format_date_range(date_only=True)
+                    logger.debug(f"Valor nulo ou default encontrado: {valor}")
+                    return format_timestamp(get_current_time())
                 
                 try:
-                    return format_date_range(valor, date_only=True)
-                except:
-                    logger.warning(f"Não foi possível converter data: {valor}")
-                    return format_date_range(date_only=True)
+                    # Debug do valor antes da conversão
+                    logger.debug(f"Convertendo valor: {valor} (tipo: {type(valor)})")
+                    
+                    # Tenta converter diretamente se for timestamp
+                    if isinstance(valor, (int, float)):
+                        logger.debug(f"Valor numérico encontrado: {valor}")
+                        return valor
+                    
+                    # Se for string, tenta converter para timestamp
+                    data = datetime.strptime(str(valor).strip(), "%d/%m/%Y %H:%M:%S")
+                    timestamp = int(data.timestamp() * 1000)
+                    logger.debug(f"String '{valor}' convertida para timestamp: {timestamp}")
+                    return timestamp
+                    
+                except Exception as e:
+                    logger.warning(f"Erro ao converter data '{valor}': {str(e)}")
+                    return format_timestamp(get_current_time())
+            
+            # Debug antes da conversão
+            logger.debug("Amostra de datas antes da conversão:")
+            logger.debug(df_processado[campo_data].head().to_list())
             
             df_processado[campo_data] = df_processado[campo_data].apply(converter_data)
+            
+            # Debug após a conversão
+            logger.debug("Amostra de datas após conversão:")
+            logger.debug(df_processado[campo_data].head().to_list())
+            
             return df_processado
             
         except Exception as e:
             logger.error(f"Erro ao processar datas: {str(e)}")
             return df
 
-    def _aplicar_transformacoes(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Aplica transformações adicionais aos dados."""
-        try:
-            df_processado = df.copy()
-            
-            # Normaliza strings
-            colunas_texto = ['funcionario', 'cliente', 'solicitante', 'sistema']
-            for coluna in colunas_texto:
-                if coluna in df_processado.columns:
-                    df_processado[coluna] = df_processado[coluna].str.strip().str.title()
-            
-            # Calcula campos derivados
-            if 'data_hora' in df_processado.columns:
-                df_processado['mes'] = df_processado['data_hora'].dt.strftime('%Y-%m')
-                df_processado['dia_semana'] = df_processado['data_hora'].dt.day_name()
-            
-            return df_processado
-            
-        except Exception as e:
-            logger.error(f"Erro nas transformações: {str(e)}")
-            return df
-
-    def _calcular_metricas(self, df: pd.DataFrame) -> Dict[str, Any]:
+    def _calcular_kpis(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Calcula KPIs principais do dashboard."""
         try:
             total_registros = len(df)
@@ -185,12 +199,11 @@ class ProcessadorDados:
             taxa_conclusao = (concluidos / total_registros * 100) if total_registros > 0 else 0
             
             # Tempo médio
+            tempo_medio = 0
             if 'data_hora' in df.columns:
                 tempo_medio = df.groupby('funcionario')['data_hora'].agg(
-                    lambda x: (x.max() - x.min()).total_seconds() / 60
+                    lambda x: (x.max() - x.min()) / (1000 * 60)  # Convertendo de ms para minutos
                 ).mean()
-            else:
-                tempo_medio = 0
 
             return {
                 'total_registros': total_registros,
@@ -251,7 +264,7 @@ class ProcessadorDados:
                 return {'labels': [], 'values': []}
                 
             df_timeline = df.copy()
-            df_timeline['data'] = df_timeline['data_hora'].dt.date
+            df_timeline['data'] = pd.to_datetime(df_timeline['data_hora'], unit='ms').dt.date
             contagem_diaria = df_timeline.groupby('data').size()
             
             return {

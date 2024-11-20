@@ -4,7 +4,6 @@ class TableManager {
         this.pagination = document.getElementById('pagination');
         this.itemsPerPage = 10;
         this.currentPage = 1;
-        this.timezone = 'America/Sao_Paulo';
         
         if (!this.table) {
             console.error('Elemento da tabela não encontrado. ID esperado: tableBody');
@@ -38,41 +37,42 @@ class TableManager {
         });
     }
 
-    formatDateTime(dateStr) {
-        if (!dateStr) return { date: 'N/A', time: '' };
+    formatDateTime(data_hora_raw) {
+        if (!data_hora_raw) return { date: 'N/A', time: '' };
         
         try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return { date: 'Data inválida', time: '' };
+            // Log do valor bruto para debug
+            console.debug('Valor bruto data_hora:', data_hora_raw);
+            
+            // Converte para número se for string
+            const timestamp = typeof data_hora_raw === 'string' ? 
+                parseInt(data_hora_raw, 10) : data_hora_raw;
+            
+            // Verifica se é um número válido
+            if (isNaN(timestamp)) {
+                console.warn('Timestamp inválido:', data_hora_raw);
+                return { date: 'Data inválida', time: '' };
+            }
+
+            const date = new Date(timestamp);
+            
+            // Verifica se a data é válida
+            if (isNaN(date.getTime())) {
+                console.warn('Data inválida para timestamp:', timestamp);
+                return { date: 'Data inválida', time: '' };
+            }
 
             return {
-                date: date.toLocaleDateString('pt-BR', {
-                    timeZone: this.timezone,
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit'
-                }),
+                date: date.toLocaleDateString('pt-BR'),
                 time: date.toLocaleTimeString('pt-BR', {
-                    timeZone: this.timezone,
                     hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
+                    minute: '2-digit'
                 })
             };
         } catch (error) {
-            console.error('Erro ao formatar data:', error);
-            return { date: 'Data inválida', time: '' };
+            console.error('Erro ao formatar data_hora:', data_hora_raw, error);
+            return { date: 'Erro', time: '' };
         }
-    }
-
-    getStatusClass(status) {
-        const classes = {
-            'Concluído': 'status-concluido',
-            'Pendente': 'status-pendente',
-            'Cancelado': 'status-cancelado',
-            'Em Andamento': 'status-em-andamento'
-        };
-        return classes[status] || '';
     }
 
     updateTable(data) {
@@ -92,6 +92,7 @@ class TableManager {
             this.table.innerHTML = pageData.map(item => {
                 const datetime = this.formatDateTime(item.data_hora);
                 const statusClass = this.getStatusClass(item.status_atendimento);
+                const descricao = item.descricao_atendimento || item.solicitacao_cliente || 'Sem descrição';
 
                 return `
                     <tr>
@@ -100,23 +101,23 @@ class TableManager {
                             <span class="time">${datetime.time}</span>
                         </td>
                         <td class="entity-cell">
-                            <span class="entity-name">${item.cliente || 'N/A'}</span>
-                            <span class="entity-detail">${item.solicitante || 'Não informado'}</span>
+                            <span class="entity-name">${this.sanitizeText(item.cliente)}</span>
+                            <span class="entity-detail">${this.sanitizeText(item.solicitante)}</span>
                         </td>
                         <td class="entity-cell">
-                            <span class="entity-name">${item.funcionario || 'N/A'}</span>
+                            <span class="entity-name">${this.sanitizeText(item.funcionario)}</span>
                         </td>
                         <td>
                             <span class="status-badge ${statusClass}">
-                                ${item.status_atendimento || 'N/A'}
+                                ${this.sanitizeText(item.status_atendimento)}
                             </span>
                         </td>
-                        <td>${item.tipo_atendimento || 'N/A'}</td>
-                        <td>${item.sistema || 'N/A'}</td>
-                        <td>${item.canal_atendimento || 'N/A'}</td>
+                        <td>${this.sanitizeText(item.tipo_atendimento)}</td>
+                        <td>${this.sanitizeText(item.sistema)}</td>
+                        <td>${this.sanitizeText(item.canal_atendimento)}</td>
                         <td class="description-cell">
                             <div class="description-content">
-                                ${item.descricao_atendimento || 'Sem descrição'}
+                                ${this.sanitizeText(descricao)}
                             </div>
                             <span class="description-toggle">Ver mais</span>
                         </td>
@@ -127,7 +128,28 @@ class TableManager {
             this.updatePagination(data.length);
         } catch (error) {
             console.error('Erro ao renderizar tabela:', error);
+            this.showError('Erro ao atualizar tabela de dados');
         }
+    }
+
+    getStatusClass(status) {
+        const classes = {
+            'Concluído': 'status-concluido',
+            'Pendente': 'status-pendente',
+            'Cancelado': 'status-cancelado',
+            'Em Andamento': 'status-em-andamento'
+        };
+        return classes[status] || '';
+    }
+
+    sanitizeText(text) {
+        if (text === null || text === undefined) return 'N/A';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
     updatePagination(totalItems) {
@@ -207,5 +229,20 @@ class TableManager {
 
             document.dispatchEvent(new CustomEvent('pageChange'));
         });
+    }
+
+    showError(message) {
+        console.error(message);
+        const errorAlert = document.getElementById('updateError');
+        if (errorAlert) {
+            const errorMessage = errorAlert.querySelector('.error-message');
+            if (errorMessage) {
+                errorMessage.textContent = message;
+            }
+            errorAlert.classList.remove('d-none');
+            setTimeout(() => {
+                errorAlert.classList.add('d-none');
+            }, 5000);
+        }
     }
 }
