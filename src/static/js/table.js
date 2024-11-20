@@ -1,305 +1,212 @@
-// Verifica se FilterManager já foi definido
-if (!window.FilterManager) {
-    class FilterManager {
-        constructor() {
-            console.info('Inicializando FilterManager');
-            this.filters = new Map();
-            this.filterContainer = document.getElementById('activeFilters');
-            
-            if (!this.filterContainer) {
-                console.error('Elemento activeFilters não encontrado');
-                return;
+class TableManager {
+    constructor() {
+        this.table = document.getElementById('tableBody');
+        this.pagination = document.getElementById('pagination');
+        this.itemsPerPage = 10;
+        this.currentPage = 1;
+        
+        if (!this.table) {
+            console.warn('Elemento tableBody não encontrado');
+            return;
+        }
+
+        this.setupEventListeners();
+        this.loadInitialData();
+    }
+
+    setupEventListeners() {
+        // Delegação de eventos para descrições expandíveis
+        this.table.addEventListener('click', (e) => {
+            if (e.target.classList.contains('description-toggle')) {
+                const content = e.target.previousElementSibling;
+                content.classList.toggle('expanded');
+                e.target.textContent = content.classList.contains('expanded') ? 'Ver menos' : 'Ver mais';
             }
-            
-            this.setupEventListeners();
-            this.initializeDateFields();
-        }
+        });
 
-        setupEventListeners() {
-            document.addEventListener('chartClick', (event) => {
-                console.debug('Clique no gráfico:', event.detail);
-                this.toggleFilter(event.detail.type, event.detail.value);
-            });
+        // Listener para mudança de página
+        document.addEventListener('pageChange', () => {
+            const data = window.dashboardManager?.dataManager?.data?.registros || [];
+            this.updateTable(data);
+        });
+    }
 
-            const startDate = document.getElementById('startDate');
-            const endDate = document.getElementById('endDate');
-
-            if (startDate && endDate) {
-                startDate.addEventListener('change', () => this.handleDateChange());
-                endDate.addEventListener('change', () => this.handleDateChange());
-            }
-        }
-
-        handleDateChange() {
-            const startDate = document.getElementById('startDate');
-            const endDate = document.getElementById('endDate');
-
-            if (startDate && endDate && startDate.value && endDate.value) {
-                if (this.validateDates(startDate.value, endDate.value)) {
-                    this.toggleFilter('period', {
-                        start: this.getDateWithMinTime(startDate.value),
-                        end: this.getDateWithMaxTime(endDate.value)
-                    });
-                }
-            }
-        }
-
-        getDateWithMinTime(dateStr) {
-            // Cria data com horário inicial do dia (00:00:00)
-            const date = new Date(dateStr + 'T00:00:00-03:00'); // GMT-3 (Brasília)
-            return date.toISOString();
-        }
-
-        getDateWithMaxTime(dateStr) {
-            // Cria data com horário final do dia (23:59:59)
-            const date = new Date(dateStr + 'T23:59:59-03:00'); // GMT-3 (Brasília)
-            return date.toISOString();
-        }
-
-        initializeDateFields() {
+    loadInitialData() {
+        const dashboardData = document.getElementById('dashboardData');
+        if (dashboardData) {
             try {
-                const brasiliaOffset = -180; // GMT-3 em minutos
-                const now = new Date();
-                const brasiliaTime = new Date(now.getTime() + (now.getTimezoneOffset() + brasiliaOffset) * 60000);
-                const firstDayOfMonth = new Date(brasiliaTime.getFullYear(), brasiliaTime.getMonth(), 1);
-                
-                const startDateInput = document.getElementById('startDate');
-                const endDateInput = document.getElementById('endDate');
-                
-                if (!startDateInput || !endDateInput) {
-                    console.error('Campos de data não encontrados');
-                    return;
+                const data = JSON.parse(dashboardData.textContent);
+                if (data && data.registros) {
+                    this.updateTable(data.registros);
                 }
-                
-                startDateInput.value = this.formatDateForInput(firstDayOfMonth);
-                endDateInput.value = this.formatDateForInput(brasiliaTime);
-                
-                this.toggleFilter('period', {
-                    start: this.getDateWithMinTime(startDateInput.value),
-                    end: this.getDateWithMaxTime(endDateInput.value)
-                });
-                
-                console.debug('Campos de data inicializados:', {
-                    start: startDateInput.value,
-                    end: endDateInput.value
-                });
             } catch (error) {
-                console.error('Erro ao inicializar campos de data:', error);
+                console.error('Erro ao carregar dados iniciais:', error);
             }
-        }
-
-        formatDateForInput(date) {
-            try {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            } catch (error) {
-                console.error('Erro ao formatar data para input:', error);
-                return '';
-            }
-        }
-
-        formatDateForDisplay(dateStr) {
-            try {
-                const date = new Date(dateStr);
-                return date.toLocaleDateString('pt-BR', {
-                    timeZone: 'America/Sao_Paulo'
-                });
-            } catch (error) {
-                console.error('Erro ao formatar data para exibição:', error);
-                return dateStr;
-            }
-        }
-
-        validateDates(startDate, endDate) {
-            try {
-                const start = new Date(startDate + 'T00:00:00-03:00');
-                const end = new Date(endDate + 'T23:59:59-03:00');
-                const today = new Date();
-                
-                if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-                    this.showError('Data inválida');
-                    return false;
-                }
-
-                if (start > end) {
-                    this.showError('Data inicial não pode ser maior que a data final');
-                    return false;
-                }
-
-                if (start > today || end > today) {
-                    this.showError('Não é possível selecionar datas futuras');
-                    return false;
-                }
-
-                return true;
-            } catch (error) {
-                console.error('Erro ao validar datas:', error);
-                return false;
-            }
-        }
-
-        toggleFilter(type, value) {
-            console.debug(`Alternando filtro: ${type} = ${JSON.stringify(value)}`);
-
-            if (type === 'period') {
-                this.filters.set(type, value);
-            } else {
-                if (!this.filters.has(type)) {
-                    this.filters.set(type, new Set());
-                }
-
-                const filterSet = this.filters.get(type);
-                if (filterSet.has(value)) {
-                    filterSet.delete(value);
-                } else {
-                    filterSet.add(value);
-                }
-
-                if (filterSet.size === 0) {
-                    this.filters.delete(type);
-                }
-            }
-
-            this.updateUI();
-            this.notifyFilterChange();
-        }
-
-        updateUI() {
-            this.filterContainer.innerHTML = '';
-            let totalFiltros = 0;
-            
-            const periodFilter = this.filters.get('period');
-            if (periodFilter) {
-                totalFiltros++;
-                const filterItem = this.createPeriodFilterItem(periodFilter);
-                this.filterContainer.appendChild(filterItem);
-            }
-            
-            this.filters.forEach((values, type) => {
-                if (type !== 'period') {
-                    values.forEach(value => {
-                        totalFiltros++;
-                        const filterItem = this.createFilterItem(type, value);
-                        this.filterContainer.appendChild(filterItem);
-                    });
-                }
-            });
-
-            const clearBtn = document.createElement('button');
-            clearBtn.className = 'btn btn-sm btn-outline-secondary ms-2';
-            clearBtn.innerHTML = '<i class="fas fa-times me-1"></i>Limpar Filtros';
-            clearBtn.onclick = () => this.clearFilters();
-            this.filterContainer.appendChild(clearBtn);
-
-            if (totalFiltros === 0) {
-                const noFilters = document.createElement('div');
-                noFilters.className = 'no-filters';
-                noFilters.textContent = 'Nenhum filtro aplicado';
-                this.filterContainer.appendChild(noFilters);
-                this.initializeDateFields();
-            }
-        }
-
-        createPeriodFilterItem(period) {
-            const item = document.createElement('div');
-            item.className = 'filter-item period-filter-item';
-            
-            const label = document.createElement('span');
-            label.className = 'filter-label';
-            
-            const startDate = this.formatDateForDisplay(period.start);
-            const endDate = this.formatDateForDisplay(period.end);
-            label.textContent = `Período: ${startDate} até ${endDate}`;
-            
-            const removeBtn = document.createElement('span');
-            removeBtn.className = 'remove-filter';
-            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-            removeBtn.onclick = (e) => {
-                e.stopPropagation();
-                this.initializeDateFields();
-            };
-
-            item.appendChild(label);
-            item.appendChild(removeBtn);
-            return item;
-        }
-
-        createFilterItem(type, value) {
-            const item = document.createElement('div');
-            item.className = 'filter-item';
-            
-            const label = document.createElement('span');
-            label.className = 'filter-label';
-            label.textContent = `${this.getFilterLabel(type)}: ${value}`;
-            
-            const removeBtn = document.createElement('span');
-            removeBtn.className = 'remove-filter';
-            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-            removeBtn.onclick = (e) => {
-                e.stopPropagation();
-                this.toggleFilter(type, value);
-            };
-
-            item.appendChild(label);
-            item.appendChild(removeBtn);
-            return item;
-        }
-
-        getFilterLabel(type) {
-            const labels = {
-                status: 'Status',
-                tipo: 'Tipo',
-                funcionario: 'Funcionário',
-                cliente: 'Cliente',
-                sistema: 'Sistema',
-                canal: 'Canal',
-                period: 'Período'
-            };
-            return labels[type] || type;
-        }
-
-        notifyFilterChange() {
-            const activeFilters = this.getActiveFilters();
-            document.dispatchEvent(new CustomEvent('filterChange', {
-                detail: activeFilters
-            }));
-        }
-
-        getActiveFilters() {
-            const activeFilters = {};
-            this.filters.forEach((values, type) => {
-                if (type === 'period') {
-                    activeFilters.period = values;
-                } else {
-                    activeFilters[type] = Array.from(values);
-                }
-            });
-            return activeFilters;
-        }
-
-        showError(message) {
-            console.error(message);
-            alert(message);
-        }
-
-        clearFilters() {
-            console.debug('Limpando todos os filtros');
-            this.filters.clear();
-            this.initializeDateFields();
-            this.updateUI();
-            this.notifyFilterChange();
         }
     }
 
-    // Define o FilterManager no escopo global para evitar redefinições
-    window.FilterManager = FilterManager;
+    formatDate(dateStr) {
+        if (!dateStr) return { date: 'N/A', time: '' };
+        try {
+            const date = new Date(dateStr);
+            return {
+                date: date.toLocaleDateString('pt-BR'),
+                time: date.toLocaleTimeString('pt-BR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                })
+            };
+        } catch (e) {
+            console.error('Erro ao formatar data:', e);
+            return { date: 'Data inválida', time: '' };
+        }
+    }
+
+    getStatusClass(status) {
+        const classes = {
+            'Concluído': 'status-concluido',
+            'Pendente': 'status-pendente',
+            'Cancelado': 'status-cancelado',
+            'Em Andamento': 'status-em-andamento'
+        };
+        return classes[status] || '';
+    }
+
+    updateTable(data) {
+        if (!this.table || !Array.isArray(data)) {
+            console.warn('Dados inválidos ou elemento da tabela não encontrado');
+            return;
+        }
+        
+        console.log('Atualizando tabela com', data.length, 'registros');
+        
+        const start = (this.currentPage - 1) * this.itemsPerPage;
+        const end = start + this.itemsPerPage;
+        const pageData = data.slice(start, end);
+
+        this.table.innerHTML = pageData.map(item => {
+            const datetime = this.formatDate(item.data_hora);
+            const statusClass = this.getStatusClass(item.status_atendimento);
+
+            return `
+                <tr>
+                    <td class="datetime-cell">
+                        <span class="date">${datetime.date}</span>
+                        <span class="time">${datetime.time}</span>
+                    </td>
+                    <td class="entity-cell">
+                        <span class="entity-name">${item.cliente || 'N/A'}</span>
+                        <span class="entity-detail">${item.solicitante || 'Não informado'}</span>
+                    </td>
+                    <td class="entity-cell">
+                        <span class="entity-name">${item.funcionario || 'N/A'}</span>
+                    </td>
+                    <td>
+                        <span class="status-badge ${statusClass}">
+                            ${item.status_atendimento || 'N/A'}
+                        </span>
+                    </td>
+                    <td>${item.tipo_atendimento || 'N/A'}</td>
+                    <td>${item.sistema || 'N/A'}</td>
+                    <td>${item.canal_atendimento || 'N/A'}</td>
+                    <td class="duration-cell">${item.duracao || 'N/A'}</td>
+                    <td class="description-cell">
+                        <div class="description-content">
+                            ${item.descricao_atendimento || 'Sem descrição'}
+                        </div>
+                        <span class="description-toggle">Ver mais</span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        this.updatePagination(data.length);
+    }
+
+    updatePagination(totalItems) {
+        if (!this.pagination) return;
+
+        const totalPages = Math.ceil(totalItems / this.itemsPerPage);
+        const pages = this.getPaginationRange(this.currentPage, totalPages);
+
+        this.pagination.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="pagination-info">
+                    Mostrando ${Math.min(totalItems, 1)}-${Math.min(this.itemsPerPage * this.currentPage, totalItems)} 
+                    de ${totalItems} registros
+                </div>
+                <ul class="pagination mb-0">
+                    ${this.currentPage > 1 ? `
+                        <li class="page-item">
+                            <a class="page-link" href="#" data-page="prev">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    ` : ''}
+                    
+                    ${pages.map(page => `
+                        <li class="page-item ${page === this.currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" data-page="${page}">
+                                ${page === '...' ? page : page}
+                            </a>
+                        </li>
+                    `).join('')}
+                    
+                    ${this.currentPage < totalPages ? `
+                        <li class="page-item">
+                            <a class="page-link" href="#" data-page="next">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    ` : ''}
+                </ul>
+            </div>
+        `;
+
+        this.setupPaginationListeners(totalPages);
+    }
+
+    getPaginationRange(current, total) {
+        if (total <= 7) {
+            return Array.from({ length: total }, (_, i) => i + 1);
+        }
+
+        if (current <= 3) {
+            return [1, 2, 3, 4, '...', total];
+        }
+
+        if (current >= total - 2) {
+            return [1, '...', total - 3, total - 2, total - 1, total];
+        }
+
+        return [
+            1,
+            '...',
+            current - 1,
+            current,
+            current + 1,
+            '...',
+            total
+        ];
+    }
+
+    setupPaginationListeners(totalPages) {
+        this.pagination.addEventListener('click', (e) => {
+            e.preventDefault();
+            const target = e.target.closest('.page-link');
+            if (!target) return;
+
+            const page = target.dataset.page;
+            
+            if (page === 'prev') {
+                this.currentPage = Math.max(1, this.currentPage - 1);
+            } else if (page === 'next') {
+                this.currentPage = Math.min(totalPages, this.currentPage + 1);
+            } else if (page !== '...') {
+                this.currentPage = parseInt(page);
+            }
+
+            document.dispatchEvent(new CustomEvent('pageChange'));
+        });
+    }
 }
-
-// Inicializa o FilterManager apenas após o DOM estar carregado
-document.addEventListener('DOMContentLoaded', () => {
-    if (!window.filterManagerInstance) {
-        window.filterManagerInstance = new FilterManager();
-    }
-});

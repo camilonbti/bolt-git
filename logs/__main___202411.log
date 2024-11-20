@@ -28,3 +28,51 @@
 [2024-11-19 14:28:18] INFO     [__main__:index:34] Iniciando carregamento do dashboard
 [2024-11-19 14:28:19] INFO     [__main__:index:41] Dados obtidos: 477 linhas
 [2024-11-19 14:28:19] INFO     [__main__:index:51] Dashboard processado com sucesso
+[2024-11-19 14:34:56] INFO     [__main__:index:34] Iniciando carregamento do dashboard
+[2024-11-19 14:34:58] INFO     [__main__:index:41] Dados obtidos: 477 linhas
+[2024-11-19 14:34:58] INFO     [__main__:index:51] Dashboard processado com sucesso
+[2024-11-19 14:38:11] INFO     [__main__:index:34] Iniciando carregamento do dashboard
+[2024-11-19 14:38:13] INFO     [__main__:index:41] Dados obtidos: 477 linhas
+[2024-11-19 14:38:13] INFO     [__main__:index:51] Dashboard processado com sucesso
+[2024-11-19 14:38:13] ERROR    [__main__:index:55] Erro ao renderizar dashboard: No filter named 'date'.
+Traceback (most recent call last):
+  File "/Users/camilo/projetos_vs/bolt_git/app.py", line 52, in index
+    return render_template('dashboard.html', dados=resultado)
+  File "/Users/camilo/Library/Python/3.9/lib/python/site-packages/flask/templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+  File "/Users/camilo/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1084, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+  File "/Users/camilo/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 1013, in get_template
+    return self._load_template(name, globals)
+  File "/Users/camilo/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 972, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "/Users/camilo/Library/Python/3.9/lib/python/site-packages/jinja2/loaders.py", line 138, in load
+    code = environment.compile(source, name, filename)
+  File "/Users/camilo/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 768, in compile
+    self.handle_exception(source=source_hint)
+  File "/Users/camilo/Library/Python/3.9/lib/python/site-packages/jinja2/environment.py", line 939, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/Users/camilo/projetos_vs/bolt_git/src/templates/dashboard.html", line 158, in template
+    <span class="date">{{ atendimento.data_hora|date }}</span>
+jinja2.exceptions.TemplateAssertionError: No filter named 'date'.
+[2024-11-19 14:40:18] INFO     [__main__:index:34] Iniciando carregamento do dashboard
+[2024-11-19 14:40:29] INFO     [__main__:index:41] Dados obtidos: 477 linhas
+[2024-11-19 14:40:29] INFO     [__main__:index:51] Dashboard processado com sucesso
+[2024-11-19 14:44:04] INFO     [__main__:index:34] Iniciando carregamento do dashboard
+[2024-11-19 14:44:05] INFO     [__main__:index:41] Dados obtidos: 477 linhas
+[2024-11-19 14:44:05] INFO     [__main__:index:51] Dashboard processado com sucesso
+[2024-11-19 14:47:00] INFO     [__main__:index:34] Iniciando carregamento do dashboard
+[2024-11-19 14:47:01] INFO     [__main__:index:41] Dados obtidos: 477 linhas
+[2024-11-19 14:47:01] INFO     [__main__:index:51] Dashboard processado com sucesso
+[2024-11-19 14:47:18] INFO     [__main__:index:34] Iniciando carregamento do dashboard
+[2024-11-19 14:47:19] INFO     [__main__:index:41] Dados obtidos: 477 linhas
+[2024-11-19 14:47:19] INFO     [__main__:index:51] Dashboard processado com sucesso
+[2024-11-19 14:48:33] INFO     [__main__:index:34] Iniciando carregamento do dashboard
+[2024-11-19 14:48:36] INFO     [__main__:index:41] Dados obtidos: 477 linhas
+[2024-11-19 14:48:36] INFO     [__main__:index:51] Dashboard processado com sucesso
+[2024-11-20 02:07:22] INFO     [__main__:index:34] Iniciando carregamento do dashboard
+[2024-11-20 02:07:24] INFO     [__main__:index:41] Dados obtidos: 491 linhas
+[2024-11-20 02:07:24] INFO     [__main__:index:51] Dashboard processado com sucesso
+[2024-11-20 02:11:00] INFO     [__main__:index:34] Iniciando carregamento do dashboard
+[2024-11-20 02:11:02] INFO     [__main__:index:41] Dados obtidos: 491 linhas
+[2024-11-20 02:11:02] INFO     [__main__:index:51] Dashboard processado com sucesso

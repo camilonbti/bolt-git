@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dashboard de Atendimentos - Sistema de Gestão">
     <title>Dashboard de Atendimentos</title>
     
     <!-- CSS -->
@@ -24,7 +23,7 @@
                     Última atualização: <span id="lastUpdate">-</span>
                 </small>
                 <button id="refreshBtn" class="btn btn-primary btn-sm">
-                    <i class="fas fa-sync-alt me-1"></i> Atualizar
+                    <i class="fas fa-sync-alt"></i> Atualizar
                 </button>
             </div>
         </header>
@@ -33,57 +32,35 @@
         <section class="filters-section">
             <div class="filters-header">
                 <div class="period-filter">
-                    <label for="startDate" class="form-label">De:</label>
-                    <input type="date" 
-                           id="startDate" 
-                           name="startDate" 
-                           class="form-control form-control-sm"
-                           pattern="\d{4}-\d{2}-\d{2}"
-                           max="{{ today_date }}"
-                           data-timezone="America/Sao_Paulo"
-                           required>
-                           
-                    <label for="endDate" class="form-label ms-2">Até:</label>
-                    <input type="date" 
-                           id="endDate" 
-                           name="endDate" 
-                           class="form-control form-control-sm"
-                           pattern="\d{4}-\d{2}-\d{2}"
-                           max="{{ today_date }}"
-                           data-timezone="America/Sao_Paulo"
-                           required>
+                    <label>Período:</label>
+                    <input type="date" id="startDate" name="startDate" class="form-control form-control-sm">
+                    <label>até</label>
+                    <input type="date" id="endDate" name="endDate" class="form-control form-control-sm">
                 </div>
             </div>
-            
-            <div class="active-filters mt-3" id="activeFilters">
+            <div class="active-filters" id="activeFilters">
                 <div class="no-filters">Nenhum filtro aplicado</div>
             </div>
         </section>
 
         <!-- KPIs -->
         <div class="row g-4 mb-4">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="kpi-card">
                     <h6>Total de Atendimentos</h6>
                     <p id="totalAtendimentos">0</p>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="kpi-card">
                     <h6>Atendimentos Pendentes</h6>
                     <p id="totalPendentes">0</p>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="kpi-card">
                     <h6>Atendimentos Concluídos</h6>
                     <p id="totalConcluidos">0</p>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="kpi-card">
-                    <h6>Tempo Médio de Atendimento</h6>
-                    <p id="tempoMedio">0 min</p>
                 </div>
             </div>
         </div>
@@ -155,21 +132,9 @@
         <section class="table-section">
             <div class="table-header d-flex justify-content-between align-items-center p-3">
                 <h5 class="mb-0">Lista de Atendimentos</h5>
-                <div class="d-flex gap-2">
-                    <div class="input-group input-group-sm">
-                        <input type="text" 
-                               id="searchInput" 
-                               class="form-control" 
-                               placeholder="Buscar..."
-                               aria-label="Buscar">
-                        <button class="btn btn-outline-secondary" type="button">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                    <button id="exportBtn" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-download me-1"></i> Exportar CSV
-                    </button>
-                </div>
+                <button id="exportBtn" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-download me-1"></i> Exportar CSV
+                </button>
             </div>
             <div class="table-responsive">
                 <table class="table">
@@ -182,21 +147,46 @@
                             <th>Tipo</th>
                             <th>Sistema</th>
                             <th>Canal</th>
+                            <th>Duração</th>
                             <th>Descrição</th>
                         </tr>
                     </thead>
-                    <tbody id="tableBody"></tbody>
+                    <tbody id="tableBody">
+                        {% for atendimento in atendimentos %}
+                        <tr>
+                            <td class="datetime-cell">
+                                <span class="date">{{ atendimento.data_hora.strftime('%d/%m/%Y') if atendimento.data_hora }}</span>
+                                <span class="time">{{ atendimento.data_hora.strftime('%H:%M') if atendimento.data_hora }}</span>
+                            </td>
+                            <td class="entity-cell">
+                                <span class="entity-name">{{ atendimento.cliente }}</span>
+                                <span class="entity-detail">{{ atendimento.solicitante }}</span>
+                            </td>
+                            <td class="entity-cell">
+                                <span class="entity-name">{{ atendimento.funcionario }}</span>
+                            </td>
+                            <td>
+                                <span class="status-badge {{ atendimento.status_atendimento|lower }}">
+                                    {{ atendimento.status_atendimento }}
+                                </span>
+                            </td>
+                            <td>{{ atendimento.tipo_atendimento }}</td>
+                            <td>{{ atendimento.sistema }}</td>
+                            <td>{{ atendimento.canal_atendimento }}</td>
+                            <td class="duration-cell">{{ atendimento.duracao }}</td>
+                            <td class="description-cell">
+                                <div class="description-content">
+                                    {{ atendimento.descricao_atendimento }}
+                                </div>
+                                <span class="description-toggle">Ver mais</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
                 </table>
             </div>
             <nav id="pagination" class="p-3"></nav>
         </section>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay d-none">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Carregando...</span>
-        </div>
     </div>
 
     <!-- Scripts -->
@@ -216,25 +206,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Configura timezone para Brasil
-            const timezone = 'America/Sao_Paulo';
-            
-            // Configura data máxima como hoje
-            const today = new Date();
-            const maxDate = today.toISOString().split('T')[0];
-            document.getElementById('startDate').max = maxDate;
-            document.getElementById('endDate').max = maxDate;
-            
-            // Inicializa o dashboard
             window.dashboardManager = new DashboardManager();
-            
-            // Configura busca na tabela
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', (e) => {
-                    window.dashboardManager.filterTable(e.target.value);
-                });
-            }
         });
     </script>
 </body>
