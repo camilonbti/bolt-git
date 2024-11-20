@@ -9,7 +9,6 @@ class ChartManager {
     initCharts() {
         console.debug('Inicializando gráficos');
         
-        // Configurações comuns para todos os gráficos
         const commonOptions = {
             responsive: true,
             maintainAspectRatio: false,
@@ -46,7 +45,7 @@ class ChartManager {
                     position: 'right'
                 }
             }
-        }, this.colorPalette.getStatusColors());
+        });
 
         // Tipo de Atendimento (Bar horizontal)
         this.createChart('tipo', 'bar', {
@@ -123,7 +122,7 @@ class ChartManager {
         });
     }
 
-    createChart(type, chartType, options, customColors = null) {
+    createChart(type, chartType, options) {
         const elementId = `${type}Chart`;
         const canvas = document.getElementById(elementId);
         
@@ -133,7 +132,7 @@ class ChartManager {
         }
 
         const ctx = canvas.getContext('2d');
-        const colors = customColors || this.colorPalette.getChartColors(10);
+        const colors = this.colorPalette.getChartColors(10);
 
         this.charts[type] = new Chart(ctx, {
             type: chartType,
@@ -167,29 +166,37 @@ class ChartManager {
     }
 
     updateCharts(data) {
+        if (!data) {
+            console.error('Dados inválidos para atualização dos gráficos');
+            return;
+        }
+
         console.debug('Atualizando gráficos com dados:', data);
         
         Object.entries(this.charts).forEach(([type, chart]) => {
-            if (data[type]) {
-                const activeFilters = window.filterManager?.getActiveFilters() || {};
-                const dataLength = data[type].labels.length;
-                const colors = type === 'status' ? 
-                    this.colorPalette.getStatusColors() : 
-                    this.colorPalette.getChartColors(dataLength);
-                
-                chart.data.labels = data[type].labels;
-                chart.data.datasets[0].data = data[type].values;
-                
-                // Aplica cores com destaque para itens filtrados
-                chart.data.datasets[0].backgroundColor = data[type].labels.map((label, index) => {
-                    const baseColor = colors[index % colors.length];
-                    return activeFilters[type]?.includes(label) ?
-                        this.colorPalette.adjustOpacity(baseColor, 0.8) :
-                        baseColor;
-                });
-                
-                chart.update('show');
+            const chartData = data[type];
+            if (!chartData || !chartData.labels || !chartData.values) {
+                console.warn(`Dados inválidos para o gráfico ${type}`);
+                return;
             }
+
+            const activeFilters = window.filterManager?.getActiveFilters() || {};
+            const dataLength = chartData.labels.length;
+            const colors = type === 'status' ? 
+                this.colorPalette.getStatusColors() : 
+                this.colorPalette.getChartColors(dataLength);
+            
+            chart.data.labels = chartData.labels;
+            chart.data.datasets[0].data = chartData.values;
+            
+            chart.data.datasets[0].backgroundColor = chartData.labels.map((label, index) => {
+                const baseColor = colors[index % colors.length];
+                return activeFilters[type]?.includes(label) ?
+                    this.colorPalette.adjustOpacity(baseColor, 0.8) :
+                    baseColor;
+            });
+            
+            chart.update('none');
         });
     }
 

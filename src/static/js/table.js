@@ -6,7 +6,7 @@ class TableManager {
         this.currentPage = 1;
         
         if (!this.table) {
-            console.warn('Elemento tableBody não encontrado');
+            console.warn('Elemento da tabela não encontrado');
             return;
         }
 
@@ -78,7 +78,7 @@ class TableManager {
             return;
         }
         
-        console.log('Atualizando tabela com', data.length, 'registros');
+        console.debug('Atualizando tabela com', data.length, 'registros');
         
         const start = (this.currentPage - 1) * this.itemsPerPage;
         const end = start + this.itemsPerPage;
@@ -109,10 +109,9 @@ class TableManager {
                     <td>${item.tipo_atendimento || 'N/A'}</td>
                     <td>${item.sistema || 'N/A'}</td>
                     <td>${item.canal_atendimento || 'N/A'}</td>
-                    <td class="duration-cell">${item.duracao || 'N/A'}</td>
                     <td class="description-cell">
                         <div class="description-content">
-                            ${item.descricao_atendimento || 'Sem descrição'}
+                            ${item.descricao_realizado || 'Sem descrição'}
                         </div>
                         <span class="description-toggle">Ver mais</span>
                     </td>

@@ -1,54 +1,39 @@
 class DashboardManager {
     constructor() {
         console.info('Inicializando DashboardManager');
-        
-        // Inicializa componentes na ordem correta
         this.initializeComponents();
         this.setupEventListeners();
-        this.loadInitialData();
     }
 
     initializeComponents() {
         try {
-            // Primeiro os dados
+            // Inicializa gerenciador de dados primeiro
             this.dataManager = new DashboardDataManager();
             
-            // Depois os gráficos
+            // Inicializa componentes de UI
             this.chartManager = new ChartManager();
-            
-            // Depois a tabela
-            if (typeof TableManager !== 'undefined') {
-                this.tableManager = new TableManager();
-            } else {
-                console.error('TableManager não encontrado');
-            }
-            
-            // Por último os filtros
+            this.tableManager = new TableManager();
             this.filterManager = new FilterManager();
+            
+            // Inicializa atualizador por último
+            this.updater = new DashboardUpdater();
             
             console.debug('Componentes inicializados com sucesso');
         } catch (error) {
             console.error('Erro ao inicializar componentes:', error);
+            this.showError('Erro ao inicializar dashboard');
         }
     }
 
     setupEventListeners() {
-        console.debug('Configurando event listeners');
-        
         document.addEventListener('dashboardUpdate', (event) => {
             console.debug('Evento de atualização recebido');
             this.updateDashboard(event.detail);
         });
 
-        const refreshBtn = document.getElementById('refreshBtn');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.refreshData());
-        }
-
-        const exportBtn = document.getElementById('exportBtn');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => this.exportData());
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            this.loadInitialData();
+        });
     }
 
     loadInitialData() {
@@ -90,12 +75,11 @@ class DashboardManager {
     }
 
     updateKPIs(kpis) {
-        console.debug('Atualizando KPIs:', kpis);
-        
         const elements = {
             totalAtendimentos: document.getElementById('totalAtendimentos'),
             totalPendentes: document.getElementById('totalPendentes'),
-            totalConcluidos: document.getElementById('totalConcluidos')
+            totalConcluidos: document.getElementById('totalConcluidos'),
+            taxaConclusao: document.getElementById('taxaConclusao')
         };
 
         try {
@@ -107,6 +91,9 @@ class DashboardManager {
             }
             if (elements.totalConcluidos) {
                 elements.totalConcluidos.textContent = (kpis.total_concluidos || 0).toLocaleString();
+            }
+            if (elements.taxaConclusao) {
+                elements.taxaConclusao.textContent = `${(kpis.taxa_conclusao || 0).toFixed(1)}%`;
             }
         } catch (error) {
             console.error('Erro ao atualizar KPIs:', error);
@@ -126,74 +113,18 @@ class DashboardManager {
         }
     }
 
-    async refreshData() {
-        console.debug('Iniciando atualização manual dos dados');
-        try {
-            const response = await fetch('/api/data');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            this.dataManager.update(data);
-            this.showSuccess('Dados atualizados com sucesso');
-        } catch (error) {
-            console.error('Erro ao atualizar dados:', error);
-            this.showError('Erro ao atualizar dados');
-        }
-    }
-
-    exportData() {
-        console.debug('Iniciando exportação de dados');
-        try {
-            const data = this.dataManager?.data?.registros;
-            if (!data || data.length === 0) {
-                this.showError('Não há dados para exportar');
-                return;
-            }
-
-            const headers = [
-                'Data/Hora',
-                'Cliente',
-                'Funcionário',
-                'Status',
-                'Tipo',
-                'Sistema',
-                'Canal',
-                'Descrição'
-            ];
-            
-            const csvContent = [
-                headers.join(','),
-                ...data.map(row => [
-                    row.data_hora || '',
-                    row.cliente || '',
-                    row.funcionario || '',
-                    row.status_atendimento || '',
-                    row.tipo_atendimento || '',
-                    row.sistema || '',
-                    row.canal_atendimento || '',
-                    `"${((row.descricao_atendimento || '').replace(/"/g, '""'))}"`
-                ].join(','))
-            ].join('\n');
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `atendimentos_${new Date().toISOString().split('T')[0]}.csv`;
-            link.click();
-
-            this.showSuccess('Dados exportados com sucesso');
-        } catch (error) {
-            console.error('Erro ao exportar dados:', error);
-            this.showError('Erro ao exportar dados');
-        }
-    }
-
-    showSuccess(message) {
-        console.info(message);
-    }
-
     showError(message) {
         console.error(message);
+        const errorAlert = document.getElementById('updateError');
+        if (errorAlert) {
+            const errorMessage = errorAlert.querySelector('.error-message');
+            if (errorMessage) {
+                errorMessage.textContent = message;
+            }
+            errorAlert.classList.remove('d-none');
+            setTimeout(() => {
+                errorAlert.classList.add('d-none');
+            }, 5000);
+        }
     }
 }

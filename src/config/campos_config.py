@@ -1,5 +1,5 @@
 """
-Configuração dos campos do dashboard
+Configuração centralizada dos campos do dashboard
 """
 
 CAMPOS_CONFIGURACAO = {
@@ -11,7 +11,8 @@ CAMPOS_CONFIGURACAO = {
         "valor_default": "1899-12-30 00:00:00",
         "permite_filtro": True,
         "tipo_filtro": "date",
-        "label": "Data/Hora"
+        "label": "Data/Hora",
+        "ordem": 1
     },
     "Prestador de Serviços:": {
         "nome_interno": "funcionario",
@@ -20,7 +21,8 @@ CAMPOS_CONFIGURACAO = {
         "valor_default": "Não informado",
         "permite_filtro": True,
         "tipo_filtro": "select",
-        "label": "Funcionário"
+        "label": "Funcionário",
+        "ordem": 2
     },
     "Empresa atendida:": {
         "nome_interno": "cliente",
@@ -29,16 +31,18 @@ CAMPOS_CONFIGURACAO = {
         "valor_default": "Não informado",
         "permite_filtro": True,
         "tipo_filtro": "select",
-        "label": "Cliente"
+        "label": "Cliente",
+        "ordem": 3
     },
     "Nome do solicitante:": {
-        "nome_interno": "funcionario_empresa",
+        "nome_interno": "solicitante",
         "tipo": "string",
         "obrigatorio": False,
         "valor_default": "Não informado",
         "permite_filtro": True,
         "tipo_filtro": "select",
-        "label": "Solicitante"
+        "label": "Solicitante",
+        "ordem": 4
     },
     "Relato do pedido de atendimento:": {
         "nome_interno": "solicitacao_cliente",
@@ -46,7 +50,8 @@ CAMPOS_CONFIGURACAO = {
         "obrigatorio": False,
         "valor_default": "Sem relato",
         "permite_filtro": False,
-        "label": "Solicitação"
+        "label": "Solicitação",
+        "ordem": 5
     },
     "Relato mais detalhado do pedido do cliente:": {
         "nome_interno": "descricao_atendimento",
@@ -54,7 +59,17 @@ CAMPOS_CONFIGURACAO = {
         "obrigatorio": False,
         "valor_default": "Sem descrição detalhada",
         "permite_filtro": False,
-        "label": "Descrição"
+        "label": "Descrição",
+        "ordem": 6
+    },
+    "Descrição do atendimento realizado:": {
+        "nome_interno": "descricao_realizado",
+        "tipo": "string",
+        "obrigatorio": False,
+        "valor_default": "Sem descrição do atendimento",
+        "permite_filtro": False,
+        "label": "Descrição",
+        "ordem": 7
     },
     "Status do atendimento:": {
         "nome_interno": "status_atendimento",
@@ -64,33 +79,37 @@ CAMPOS_CONFIGURACAO = {
         "valores_permitidos": ["Concluído", "Pendente", "Cancelado", "Em Andamento"],
         "permite_filtro": True,
         "tipo_filtro": "select",
-        "label": "Status"
+        "label": "Status",
+        "ordem": 8
     },
     "Tipo do atendimento solicitado:": {
-        "nome_interno": "tipo_atendimento",  # Corrigido de sistema_cliente para tipo_atendimento
+        "nome_interno": "tipo_atendimento",
         "tipo": "string",
         "obrigatorio": False,
         "valor_default": "Não categorizado",
         "permite_filtro": True,
         "tipo_filtro": "select",
-        "label": "Tipo"
+        "label": "Tipo",
+        "ordem": 9
     },
     "Sistema do cliente:": {
-        "nome_interno": "sistema",  # Simplificado de tipo_sistema para sistema
+        "nome_interno": "sistema",
         "tipo": "string",
         "obrigatorio": False,
         "valor_default": "Não especificado",
         "permite_filtro": True,
         "tipo_filtro": "select",
-        "label": "Sistema"
+        "label": "Sistema",
+        "ordem": 10
     },
     "Qual(s) canal(s) utilizado(s) para realizar o atendimento? ": {
-        "nome_interno": "canal_atendimento",  # Simplificado de plataforma_atendimento para canal_atendimento
+        "nome_interno": "canal_atendimento",
         "tipo": "string",
         "obrigatorio": False,
         "valor_default": "Não especificado",
         "permite_filtro": True,
         "tipo_filtro": "select",
-        "label": "Canal"
+        "label": "Canal",
+        "ordem": 11
     }
 }

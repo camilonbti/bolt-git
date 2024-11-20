@@ -1,7 +1,7 @@
 class DashboardDataManager {
     constructor() {
         console.info('Inicializando DashboardDataManager');
-        this.data = this._getInitialData();
+        this.data = window.ATENDIMENTOS_DATASET || [];
         this.setupEventListeners();
         this.initializePeriodFilter();
     }
@@ -19,38 +19,17 @@ class DashboardDataManager {
         
         this.applyFilters({
             period: {
-                start: this._formatDate(firstDayOfMonth),
-                end: this._formatDate(today)
+                start: this.#formatDate(firstDayOfMonth),
+                end: this.#formatDate(today)
             }
         });
     }
 
-    _getInitialData() {
-        try {
-            const dataElement = document.getElementById('dashboardData');
-            if (!dataElement) {
-                console.error('Elemento de dados não encontrado');
-                return this._getEmptyData();
-            }
-
-            const data = JSON.parse(dataElement.textContent);
-            console.info('Dados iniciais carregados:', {
-                registros: data.registros?.length || 0,
-                graficos: Object.keys(data.graficos || {})
-            });
-            
-            return data;
-        } catch (error) {
-            console.error('Erro ao carregar dados iniciais:', error);
-            return this._getEmptyData();
-        }
-    }
-
-    _formatDate(date) {
+    #formatDate(date) {
         return date.toISOString().split('T')[0];
     }
 
-    _parseDate(dateStr) {
+    #parseDate(dateStr) {
         if (!dateStr) return null;
         try {
             const date = new Date(dateStr);
@@ -65,12 +44,12 @@ class DashboardDataManager {
         console.debug('Aplicando filtros:', filters);
         
         try {
-            const filteredData = this._filterData(this.data, filters);
-            this._updateDashboard(filteredData);
+            const filteredData = this.#filterData(this.data, filters);
+            this.#updateDashboard(filteredData);
             
             console.info('Filtros aplicados com sucesso:', {
-                antes: this.data.registros?.length || 0,
-                depois: filteredData.registros?.length || 0,
+                antes: this.data.length,
+                depois: filteredData.length,
                 filtrosAtivos: Object.keys(filters).length
             });
         } catch (error) {
@@ -78,43 +57,36 @@ class DashboardDataManager {
         }
     }
 
-    _filterData(data, filters) {
+    #filterData(data, filters) {
         if (!filters || Object.keys(filters).length === 0) {
-            return {...data};
+            return data;
         }
 
-        const registrosFiltrados = (data.registros || []).filter(registro => {
+        return data.filter(registro => {
             return Object.entries(filters).every(([tipo, valores]) => {
                 if (!valores || (Array.isArray(valores) && valores.length === 0)) {
                     return true;
                 }
                 
                 if (tipo === 'period') {
-                    return this._filterByPeriod(registro, valores);
+                    return this.#filterByPeriod(registro, valores);
                 }
                 
-                const valor = this._getFieldValue(registro, tipo);
+                const valor = this.#getFieldValue(registro, tipo);
                 return Array.isArray(valores) ? valores.includes(valor) : true;
             });
         });
-
-        return {
-            ...data,
-            registros: registrosFiltrados,
-            kpis: this._calcularKPIs(registrosFiltrados),
-            graficos: this._calcularGraficos(registrosFiltrados)
-        };
     }
 
-    _filterByPeriod(registro, period) {
+    #filterByPeriod(registro, period) {
         if (!registro.data_hora || !period.start || !period.end) {
             return true;
         }
 
         try {
-            const dataRegistro = this._parseDate(registro.data_hora);
-            const startDate = this._parseDate(period.start);
-            const endDate = this._parseDate(period.end);
+            const dataRegistro = this.#parseDate(registro.data_hora);
+            const startDate = this.#parseDate(period.start);
+            const endDate = this.#parseDate(period.end);
             
             if (!dataRegistro || !startDate || !endDate) {
                 return true;
@@ -128,7 +100,7 @@ class DashboardDataManager {
         }
     }
 
-    _getFieldValue(registro, tipo) {
+    #getFieldValue(registro, tipo) {
         const mapeamento = {
             'status': 'status_atendimento',
             'tipo': 'tipo_atendimento',
@@ -141,29 +113,43 @@ class DashboardDataManager {
         return registro[mapeamento[tipo] || tipo] || '';
     }
 
-    _calcularKPIs(registros) {
+    #updateDashboard(filteredData) {
+        const dashboardData = {
+            registros: filteredData,
+            kpis: this.#calcularKPIs(filteredData),
+            graficos: this.#calcularGraficos(filteredData),
+            ultima_atualizacao: new Date().toISOString()
+        };
+
+        document.dispatchEvent(new CustomEvent('dashboardUpdate', { 
+            detail: dashboardData 
+        }));
+    }
+
+    #calcularKPIs(registros) {
         const total = registros.length;
         const concluidos = registros.filter(r => r.status_atendimento === 'Concluído').length;
         
         return {
             total_registros: total,
             total_concluidos: concluidos,
-            total_pendentes: total - concluidos
+            total_pendentes: total - concluidos,
+            taxa_conclusao: total > 0 ? (concluidos / total * 100) : 0
         };
     }
 
-    _calcularGraficos(registros) {
+    #calcularGraficos(registros) {
         return {
-            status: this._contarValores(registros, 'status_atendimento'),
-            tipo: this._contarValores(registros, 'tipo_atendimento'),
-            funcionario: this._contarValores(registros, 'funcionario'),
-            cliente: this._contarValores(registros, 'cliente'),
-            sistema: this._contarValores(registros, 'sistema'),
-            canal: this._contarValores(registros, 'canal_atendimento')
+            status: this.#contarValores(registros, 'status_atendimento'),
+            tipo: this.#contarValores(registros, 'tipo_atendimento'),
+            funcionario: this.#contarValores(registros, 'funcionario'),
+            cliente: this.#contarValores(registros, 'cliente'),
+            sistema: this.#contarValores(registros, 'sistema'),
+            canal: this.#contarValores(registros, 'canal_atendimento')
         };
     }
 
-    _contarValores(registros, campo) {
+    #contarValores(registros, campo) {
         const contagem = registros.reduce((acc, registro) => {
             const valor = registro[campo] || 'Não informado';
             acc[valor] = (acc[valor] || 0) + 1;
@@ -180,34 +166,8 @@ class DashboardDataManager {
         };
     }
 
-    _getEmptyData() {
-        return {
-            kpis: {
-                total_registros: 0,
-                total_concluidos: 0,
-                total_pendentes: 0
-            },
-            graficos: {
-                status: { labels: [], values: [] },
-                tipo: { labels: [], values: [] },
-                funcionario: { labels: [], values: [] },
-                cliente: { labels: [], values: [] },
-                sistema: { labels: [], values: [] },
-                canal: { labels: [], values: [] }
-            },
-            registros: [],
-            ultima_atualizacao: new Date().toISOString()
-        };
-    }
-
-    _updateDashboard(data) {
-        document.dispatchEvent(new CustomEvent('dashboardUpdate', {
-            detail: data
-        }));
-    }
-
     update(newData) {
         this.data = newData;
-        this._updateDashboard(newData);
+        this.applyFilters({});
     }
 }
