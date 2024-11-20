@@ -1,19 +1,35 @@
 class DashboardManager {
     constructor() {
         console.info('Inicializando DashboardManager');
-        this.dataManager = new DashboardDataManager();
-        this.chartManager = new ChartManager();
-        this.filterManager = new FilterManager();
-
-        // Garantindo que TableManager seja inicializado
-        if (window.TableManager) {
-            this.tableManager = new TableManager();
-        } else {
-            console.error('TableManager não definido. Verifique o carregamento do arquivo table.js.');
-        }
-
+        
+        // Inicializa componentes na ordem correta
+        this.initializeComponents();
         this.setupEventListeners();
         this.loadInitialData();
+    }
+
+    initializeComponents() {
+        try {
+            // Primeiro os dados
+            this.dataManager = new DashboardDataManager();
+            
+            // Depois os gráficos
+            this.chartManager = new ChartManager();
+            
+            // Depois a tabela
+            if (typeof TableManager !== 'undefined') {
+                this.tableManager = new TableManager();
+            } else {
+                console.error('TableManager não encontrado');
+            }
+            
+            // Por último os filtros
+            this.filterManager = new FilterManager();
+            
+            console.debug('Componentes inicializados com sucesso');
+        } catch (error) {
+            console.error('Erro ao inicializar componentes:', error);
+        }
     }
 
     setupEventListeners() {
@@ -33,18 +49,11 @@ class DashboardManager {
         if (exportBtn) {
             exportBtn.addEventListener('click', () => this.exportData());
         }
-
-        const clearPeriodBtn = document.getElementById('clearPeriod');
-        if (clearPeriodBtn) {
-            clearPeriodBtn.addEventListener('click', () => {
-                this.filterManager.initializeDateFields();
-            });
-        }
     }
 
     loadInitialData() {
         console.debug('Carregando dados iniciais');
-        const data = this.dataManager.data;
+        const data = this.dataManager?.data;
         if (data) {
             this.updateDashboard(data);
         }
@@ -59,10 +68,15 @@ class DashboardManager {
             }
 
             this.updateKPIs(data.kpis || {});
-            this.chartManager.updateCharts(data.graficos || {});
+            
+            if (this.chartManager) {
+                this.chartManager.updateCharts(data.graficos || {});
+            }
+            
             if (this.tableManager) {
                 this.tableManager.updateTable(data.registros || []);
             }
+            
             this.updateTimestamp(data.ultima_atualizacao);
             
             console.info('Dashboard atualizado com sucesso:', {
@@ -131,7 +145,7 @@ class DashboardManager {
     exportData() {
         console.debug('Iniciando exportação de dados');
         try {
-            const data = this.dataManager.data?.registros;
+            const data = this.dataManager?.data?.registros;
             if (!data || data.length === 0) {
                 this.showError('Não há dados para exportar');
                 return;

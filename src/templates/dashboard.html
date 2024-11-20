@@ -151,38 +151,7 @@
                             <th>Descrição</th>
                         </tr>
                     </thead>
-                    <tbody id="tableBody">
-                        {% for atendimento in atendimentos %}
-                        <tr>
-                            <td class="datetime-cell">
-                                <span class="date">{{ atendimento.data_hora.strftime('%d/%m/%Y') if atendimento.data_hora }}</span>
-                                <span class="time">{{ atendimento.data_hora.strftime('%H:%M') if atendimento.data_hora }}</span>
-                            </td>
-                            <td class="entity-cell">
-                                <span class="entity-name">{{ atendimento.cliente }}</span>
-                                <span class="entity-detail">{{ atendimento.solicitante }}</span>
-                            </td>
-                            <td class="entity-cell">
-                                <span class="entity-name">{{ atendimento.funcionario }}</span>
-                            </td>
-                            <td>
-                                <span class="status-badge {{ atendimento.status_atendimento|lower }}">
-                                    {{ atendimento.status_atendimento }}
-                                </span>
-                            </td>
-                            <td>{{ atendimento.tipo_atendimento }}</td>
-                            <td>{{ atendimento.sistema }}</td>
-                            <td>{{ atendimento.canal_atendimento }}</td>
-                            <td class="duration-cell">{{ atendimento.duracao }}</td>
-                            <td class="description-cell">
-                                <div class="description-content">
-                                    {{ atendimento.descricao_atendimento }}
-                                </div>
-                                <span class="description-toggle">Ver mais</span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
+                    <tbody id="tableBody"></tbody>
                 </table>
             </div>
             <nav id="pagination" class="p-3"></nav>
@@ -192,21 +161,28 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='js/color-palette.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/data.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/table.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/filters.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
-
+    
     <!-- Dados iniciais -->
     <script id="dashboardData" type="application/json">
         {{ dados|tojson|safe }}
     </script>
 
+    <!-- Scripts da aplicação (ordem correta de carregamento) -->
+    <script src="{{ url_for('static', filename='js/color-palette.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/data.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/table.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/filters.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            window.dashboardManager = new DashboardManager();
+        // Garante que todos os scripts estejam carregados antes de inicializar
+        window.addEventListener('load', () => {
+            if (typeof DashboardManager !== 'undefined') {
+                window.dashboardManager = new DashboardManager();
+            } else {
+                console.error('DashboardManager não encontrado');
+            }
         });
     </script>
 </body>

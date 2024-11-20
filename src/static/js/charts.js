@@ -36,7 +36,7 @@ class ChartManager {
         };
 
         // Status (Doughnut)
-        this.initChart('status', 'doughnut', {
+        this.createChart('status', 'doughnut', {
             ...commonOptions,
             cutout: '60%',
             plugins: {
@@ -49,38 +49,30 @@ class ChartManager {
         }, this.colorPalette.getStatusColors());
 
         // Tipo de Atendimento (Bar horizontal)
-        this.initChart('tipo', 'bar', {
+        this.createChart('tipo', 'bar', {
             ...commonOptions,
             indexAxis: 'y',
             scales: {
                 x: { 
                     beginAtZero: true,
-                    grid: {
-                        display: false
-                    }
+                    grid: { display: false }
                 },
                 y: {
-                    grid: {
-                        display: false
-                    }
+                    grid: { display: false }
                 }
             }
         });
 
         // Funcionário (Bar)
-        this.initChart('funcionario', 'bar', {
+        this.createChart('funcionario', 'bar', {
             ...commonOptions,
             scales: {
                 y: { 
                     beginAtZero: true,
-                    grid: {
-                        display: false
-                    }
+                    grid: { display: false }
                 },
                 x: {
-                    grid: {
-                        display: false
-                    },
+                    grid: { display: false },
                     ticks: {
                         maxRotation: 45,
                         minRotation: 45
@@ -90,26 +82,22 @@ class ChartManager {
         });
 
         // Cliente (Bar horizontal)
-        this.initChart('cliente', 'bar', {
+        this.createChart('cliente', 'bar', {
             ...commonOptions,
             indexAxis: 'y',
             scales: {
                 x: { 
                     beginAtZero: true,
-                    grid: {
-                        display: false
-                    }
+                    grid: { display: false }
                 },
                 y: {
-                    grid: {
-                        display: false
-                    }
+                    grid: { display: false }
                 }
             }
         });
 
         // Sistema (Pie)
-        this.initChart('sistema', 'pie', {
+        this.createChart('sistema', 'pie', {
             ...commonOptions,
             plugins: {
                 ...commonOptions.plugins,
@@ -121,50 +109,30 @@ class ChartManager {
         });
 
         // Canal (Bar)
-        this.initChart('canal', 'bar', {
+        this.createChart('canal', 'bar', {
             ...commonOptions,
             scales: {
                 y: { 
                     beginAtZero: true,
-                    grid: {
-                        display: false
-                    }
+                    grid: { display: false }
                 },
                 x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            }
-        });
-
-        // Solicitações (Bar horizontal)
-        this.initChart('solicitacao', 'bar', {
-            ...commonOptions,
-            indexAxis: 'y',
-            scales: {
-                x: { 
-                    beginAtZero: true,
-                    grid: {
-                        display: false
-                    }
-                },
-                y: {
-                    grid: {
-                        display: false
-                    }
+                    grid: { display: false }
                 }
             }
         });
     }
 
-    initChart(type, chartType, options, customColors = null) {
-        const ctx = document.getElementById(`${type}Chart`)?.getContext('2d');
-        if (!ctx) {
-            console.warn(`Elemento ${type}Chart não encontrado. Verifique se o elemento está presente no HTML.`);
-            return; // Não tentar inicializar o gráfico se o elemento não existe
+    createChart(type, chartType, options, customColors = null) {
+        const elementId = `${type}Chart`;
+        const canvas = document.getElementById(elementId);
+        
+        if (!canvas) {
+            console.error(`Elemento ${elementId} não encontrado`);
+            return;
         }
 
+        const ctx = canvas.getContext('2d');
         const colors = customColors || this.colorPalette.getChartColors(10);
 
         this.charts[type] = new Chart(ctx, {

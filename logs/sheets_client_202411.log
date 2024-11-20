@@ -118,3 +118,45 @@
 [2024-11-20 02:14:45] INFO     [src.core.sheets_client:__init__:17] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
 [2024-11-20 02:14:45] INFO     [src.core.sheets_client:ler_planilha:81] Iniciando leitura do range: Sheet1!A1:Z1000
 [2024-11-20 02:14:47] INFO     [src.core.sheets_client:ler_planilha:103] Dados lidos com sucesso. Total de linhas: 491
+[2024-11-20 02:18:42] INFO     [src.core.sheets_client:__init__:13] Inicializando cliente do Google Sheets
+[2024-11-20 02:18:42] INFO     [src.core.sheets_client:_get_credentials:27] Credenciais obtidas com sucesso
+[2024-11-20 02:18:42] INFO     [src.core.sheets_client:_create_service:43] Serviço do Google Sheets criado com sucesso
+[2024-11-20 02:18:42] INFO     [src.core.sheets_client:__init__:17] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
+[2024-11-20 02:18:42] INFO     [src.core.sheets_client:ler_planilha:81] Iniciando leitura do range: Sheet1!A1:Z1000
+[2024-11-20 02:18:43] INFO     [src.core.sheets_client:ler_planilha:103] Dados lidos com sucesso. Total de linhas: 491
+[2024-11-20 02:22:49] INFO     [src.core.sheets_client:__init__:13] Inicializando cliente do Google Sheets
+[2024-11-20 02:22:49] INFO     [src.core.sheets_client:_get_credentials:27] Credenciais obtidas com sucesso
+[2024-11-20 02:22:49] INFO     [src.core.sheets_client:_create_service:43] Serviço do Google Sheets criado com sucesso
+[2024-11-20 02:22:49] INFO     [src.core.sheets_client:__init__:17] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
+[2024-11-20 02:22:49] INFO     [src.core.sheets_client:ler_planilha:81] Iniciando leitura do range: Sheet1!A1:Z1000
+[2024-11-20 02:22:51] INFO     [src.core.sheets_client:ler_planilha:103] Dados lidos com sucesso. Total de linhas: 491
+[2024-11-20 02:24:52] INFO     [src.core.sheets_client:__init__:13] Inicializando cliente do Google Sheets
+[2024-11-20 02:24:52] INFO     [src.core.sheets_client:_get_credentials:27] Credenciais obtidas com sucesso
+[2024-11-20 02:24:52] INFO     [src.core.sheets_client:_create_service:43] Serviço do Google Sheets criado com sucesso
+[2024-11-20 02:24:52] INFO     [src.core.sheets_client:__init__:17] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
+[2024-11-20 02:24:52] INFO     [src.core.sheets_client:ler_planilha:81] Iniciando leitura do range: Sheet1!A1:Z1000
+[2024-11-20 02:24:54] INFO     [src.core.sheets_client:ler_planilha:103] Dados lidos com sucesso. Total de linhas: 491
+[2024-11-20 02:26:01] INFO     [src.core.sheets_client:__init__:13] Inicializando cliente do Google Sheets
+[2024-11-20 02:26:01] INFO     [src.core.sheets_client:_get_credentials:27] Credenciais obtidas com sucesso
+[2024-11-20 02:26:01] INFO     [src.core.sheets_client:_create_service:43] Serviço do Google Sheets criado com sucesso
+[2024-11-20 02:26:01] INFO     [src.core.sheets_client:__init__:17] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
+[2024-11-20 02:26:01] INFO     [src.core.sheets_client:ler_planilha:81] Iniciando leitura do range: Sheet1!A1:Z1000
+[2024-11-20 02:26:02] INFO     [src.core.sheets_client:ler_planilha:103] Dados lidos com sucesso. Total de linhas: 491
+[2024-11-20 02:30:26] INFO     [src.core.sheets_client:__init__:13] Inicializando cliente do Google Sheets
+[2024-11-20 02:30:26] INFO     [src.core.sheets_client:_get_credentials:27] Credenciais obtidas com sucesso
+[2024-11-20 02:30:26] INFO     [src.core.sheets_client:_create_service:43] Serviço do Google Sheets criado com sucesso
+[2024-11-20 02:30:26] INFO     [src.core.sheets_client:__init__:17] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
+[2024-11-20 02:30:26] INFO     [src.core.sheets_client:ler_planilha:81] Iniciando leitura do range: Sheet1!A1:Z1000
+[2024-11-20 02:30:28] INFO     [src.core.sheets_client:ler_planilha:103] Dados lidos com sucesso. Total de linhas: 491
+[2024-11-20 02:34:26] INFO     [src.core.sheets_client:__init__:13] Inicializando cliente do Google Sheets
+[2024-11-20 02:34:26] INFO     [src.core.sheets_client:_get_credentials:27] Credenciais obtidas com sucesso
+[2024-11-20 02:34:26] INFO     [src.core.sheets_client:_create_service:43] Serviço do Google Sheets criado com sucesso
+[2024-11-20 02:34:26] INFO     [src.core.sheets_client:__init__:17] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
+[2024-11-20 02:34:26] INFO     [src.core.sheets_client:ler_planilha:81] Iniciando leitura do range: Sheet1!A1:Z1000
+[2024-11-20 02:34:28] INFO     [src.core.sheets_client:ler_planilha:103] Dados lidos com sucesso. Total de linhas: 491
+[2024-11-20 02:37:02] INFO     [src.core.sheets_client:__init__:13] Inicializando cliente do Google Sheets
+[2024-11-20 02:37:02] INFO     [src.core.sheets_client:_get_credentials:27] Credenciais obtidas com sucesso
+[2024-11-20 02:37:02] INFO     [src.core.sheets_client:_create_service:43] Serviço do Google Sheets criado com sucesso
+[2024-11-20 02:37:02] INFO     [src.core.sheets_client:__init__:17] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
+[2024-11-20 02:37:02] INFO     [src.core.sheets_client:ler_planilha:81] Iniciando leitura do range: Sheet1!A1:Z1000
+[2024-11-20 02:37:04] INFO     [src.core.sheets_client:ler_planilha:103] Dados lidos com sucesso. Total de linhas: 491

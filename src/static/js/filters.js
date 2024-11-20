@@ -119,6 +119,9 @@ class FilterManager {
             const now = new Date();
             const brasiliaOffset = -180; // GMT-3 em minutos
             const today = new Date(now.getTime() + (now.getTimezoneOffset() + brasiliaOffset) * 60000);
+            
+            // Remove o componente de tempo para comparação apenas das datas
+            today.setHours(23, 59, 59, 999);
 
             if (isNaN(start.getTime()) || isNaN(end.getTime())) {
                 this.showError('Data inválida');
@@ -130,7 +133,8 @@ class FilterManager {
                 return false;
             }
 
-            if (start > today || end > today) {
+            // Compara apenas as datas, ignorando o horário
+            if (end > today) {
                 this.showError('Não é possível selecionar datas futuras');
                 return false;
             }
