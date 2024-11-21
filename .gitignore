@@ -2,6 +2,8 @@ credentials.json
 **/tests/
 **/__pycache__/
 
+test_*.py
+
 # Arquivos compilados em Python
 *.pyc
 *.pyo
