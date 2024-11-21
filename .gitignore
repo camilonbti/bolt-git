@@ -1,2 +1,67 @@
 credentials.json
-credentials.json
+**/tests/
+**/__pycache__/
+
+# Arquivos compilados em Python
+*.pyc
+*.pyo
+*.pyd
+*.pyo.*
+*.pyc.*
+
+# Ambientes Virtuais
+venv/
+env/
+*.venv/
+
+# Configurações locais e arquivos temporários
+*.env
+*.env.*
+*.log
+*.ini
+*.cfg
+*.local/
+*.DS_Store
+*.swp
+*.swo
+
+# Ferramentas de Debug/IDE
+.idea/
+.vscode/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# Logs e dumps
+logs/
+*.log
+*.out
+*.err
+
+# Cache do pip
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Arquivos de banco de dados locais
+*.sqlite3
+*.db
+
+# Arquivos gerados por testes
+coverage.xml
+*.cover
+.hypothesis/
+.tox/
+nosetests.xml
+test-output/
+junit-*.xml
+
+# Outros caches
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+.wheel/
+
+# Arquivos específicos de SO
+Thumbs.db

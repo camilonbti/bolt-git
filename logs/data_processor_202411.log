@@ -4,3 +4,4 @@ Traceback (most recent call last):
     'kpis': self._calcular_kpis(df),
 AttributeError: 'ProcessadorDados' object has no attribute '_calcular_kpis'
 [2024-11-20 19:50:27] INFO     [src.core.data_processor:processar_dados:86] Dados processados: 490 registros
+[2024-11-20 23:59:04] INFO     [src.core.data_processor:processar_dados:86] Dados processados: 490 registros

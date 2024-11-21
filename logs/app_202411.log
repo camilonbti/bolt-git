@@ -70,3 +70,33 @@ AttributeError: 'ProcessadorDados' object has no attribute '_calcular_kpis'
 [2024-11-20 19:50:27] INFO     [src.core.data_processor:processar_dados:86] Dados processados: 490 registros
 [2024-11-20 19:50:27] INFO     [__main__:get_data:45] Dados processados com sucesso
 [2024-11-20 19:50:27] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 19:50:27] "GET /api/data HTTP/1.1" 200 -
+[2024-11-20 23:59:00] INFO     [werkzeug:_log:97] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://127.0.0.1:5002
+[2024-11-20 23:59:00] INFO     [werkzeug:_log:97] [33mPress CTRL+C to quit[0m
+[2024-11-20 23:59:00] INFO     [werkzeug:_log:97]  * Restarting with stat
+[2024-11-20 23:59:01] WARNING  [werkzeug:_log:97]  * Debugger is active!
+[2024-11-20 23:59:01] INFO     [werkzeug:_log:97]  * Debugger PIN: 870-047-978
+[2024-11-20 23:59:02] INFO     [__main__:index:23] Iniciando carregamento do dashboard
+[2024-11-20 23:59:02] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 23:59:02] "GET / HTTP/1.1" 200 -
+[2024-11-20 23:59:02] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 23:59:02] "[36mGET /static/css/style.css HTTP/1.1[0m" 304 -
+[2024-11-20 23:59:02] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 23:59:02] "GET /static/css/charts.css HTTP/1.1" 200 -
+[2024-11-20 23:59:02] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 23:59:02] "[36mGET /static/css/filters.css HTTP/1.1[0m" 304 -
+[2024-11-20 23:59:02] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 23:59:02] "[36mGET /static/css/table.css HTTP/1.1[0m" 304 -
+[2024-11-20 23:59:02] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 23:59:02] "[36mGET /static/js/data.js HTTP/1.1[0m" 304 -
+[2024-11-20 23:59:02] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 23:59:02] "[36mGET /static/js/color-palette.js HTTP/1.1[0m" 304 -
+[2024-11-20 23:59:02] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 23:59:02] "GET /static/js/charts.js HTTP/1.1" 200 -
+[2024-11-20 23:59:02] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 23:59:02] "GET /static/js/table.js HTTP/1.1" 200 -
+[2024-11-20 23:59:02] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 23:59:02] "[36mGET /static/js/filters.js HTTP/1.1[0m" 304 -
+[2024-11-20 23:59:02] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 23:59:02] "GET /static/js/dashboard.js HTTP/1.1" 200 -
+[2024-11-20 23:59:02] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 23:59:02] "[36mGET /static/js/updater.js HTTP/1.1[0m" 304 -
+[2024-11-20 23:59:02] INFO     [__main__:get_data:37] Iniciando carregamento de dados via API
+[2024-11-20 23:59:02] INFO     [src.core.sheets_client:__init__:24] Inicializando cliente do Google Sheets
+[2024-11-20 23:59:02] INFO     [src.core.sheets_client:_get_credentials:39] Credenciais obtidas com sucesso
+[2024-11-20 23:59:02] INFO     [googleapiclient.discovery_cache:autodetect:49] file_cache is only supported with oauth2client<4.0.0
+[2024-11-20 23:59:02] INFO     [src.core.sheets_client:_create_service:55] Serviço do Google Sheets criado com sucesso
+[2024-11-20 23:59:02] INFO     [src.core.sheets_client:__init__:29] Cliente inicializado com sucesso. Spreadsheet ID: 1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc
+[2024-11-20 23:59:02] INFO     [src.core.sheets_client:ler_planilha:81] Iniciando leitura do range: Sheet1!A1:Z1000
+[2024-11-20 23:59:04] INFO     [src.core.sheets_client:ler_planilha:122] Dados lidos com sucesso. Total de linhas: 491
+[2024-11-20 23:59:04] INFO     [src.core.data_processor:processar_dados:86] Dados processados: 490 registros
+[2024-11-20 23:59:04] INFO     [__main__:get_data:45] Dados processados com sucesso
+[2024-11-20 23:59:04] INFO     [werkzeug:_log:97] 127.0.0.1 - - [20/Nov/2024 23:59:04] "GET /api/data HTTP/1.1" 200 -
