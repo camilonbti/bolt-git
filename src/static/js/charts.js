@@ -26,14 +26,10 @@ class ChartManager {
         const commonOptions = {
             responsive: true,
             maintainAspectRatio: false,
+            indexAxis: 'y', // Todos os gráficos serão horizontais
             plugins: {
                 legend: {
-                    position: 'bottom',
-                    labels: {
-                        boxWidth: 12,
-                        padding: 15,
-                        font: { size: 11 }
-                    }
+                    display: false // Remove legendas para melhor visualização
                 },
                 tooltip: {
                     callbacks: {
@@ -45,124 +41,74 @@ class ChartManager {
                         }
                     }
                 }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    grid: {
+                        display: false
+                    }
+                }
             }
         };
 
-        // Status (Doughnut)
+        // Status (mantém como doughnut)
         this.createChart('status', 'doughnut', {
             ...commonOptions,
+            indexAxis: undefined, // Remove para doughnut
             cutout: '60%',
             plugins: {
-                ...commonOptions.plugins,
                 legend: {
-                    ...commonOptions.plugins.legend,
+                    display: true,
                     position: 'right'
                 }
             }
-        }, this.colorPalette.getStatusColors(), this.initialData.status);
+        }, this.colorPalette.getStatusColors());
 
-        // Tipo de Atendimento (Bar horizontal)
-        this.createChart('tipo', 'bar', {
-            ...commonOptions,
-            indexAxis: 'y',
-            scales: {
-                x: { 
-                    beginAtZero: true,
-                    grid: { display: false }
-                },
-                y: {
-                    grid: { display: false }
-                }
-            }
-        }, null, this.initialData.tipo);
+        // Demais gráficos como barras horizontais
+        const barCharts = [
+            'tipo',
+            'funcionario',
+            'cliente',
+            'sistema',
+            'canal',
+            'relato',
+            'solicitacao'
+        ];
 
-        // Funcionário (Bar)
-        this.createChart('funcionario', 'bar', {
-            ...commonOptions,
-            scales: {
-                y: { 
-                    beginAtZero: true,
-                    grid: { display: false }
-                },
-                x: {
-                    grid: { display: false }
+        barCharts.forEach(type => {
+            this.createChart(type, 'bar', {
+                ...commonOptions,
+                plugins: {
+                    ...commonOptions.plugins,
+                    title: {
+                        display: true,
+                        // text: this.getChartTitle(type)
+                    }
                 }
-            }
-        }, null, this.initialData.funcionario);
-
-        // Cliente (Bar horizontal)
-        this.createChart('cliente', 'bar', {
-            ...commonOptions,
-            indexAxis: 'y',
-            scales: {
-                x: { 
-                    beginAtZero: true,
-                    grid: { display: false }
-                },
-                y: {
-                    grid: { display: false }
-                }
-            }
-        }, null, this.initialData.cliente);
-
-        // Sistema (Pie)
-        this.createChart('sistema', 'pie', {
-            ...commonOptions,
-            plugins: {
-                ...commonOptions.plugins,
-                legend: {
-                    ...commonOptions.plugins.legend,
-                    position: 'right'
-                }
-            }
-        }, null, this.initialData.sistema);
-
-        // Canal (Bar)
-        this.createChart('canal', 'bar', {
-            ...commonOptions,
-            scales: {
-                y: { 
-                    beginAtZero: true,
-                    grid: { display: false }
-                },
-                x: {
-                    grid: { display: false }
-                }
-            }
-        }, null, this.initialData.canal);
-
-        // Relato (Bar horizontal)
-        this.createChart('relato', 'bar', {
-            ...commonOptions,
-            indexAxis: 'y',
-            scales: {
-                x: { 
-                    beginAtZero: true,
-                    grid: { display: false }
-                },
-                y: {
-                    grid: { display: false }
-                }
-            }
-        }, null, this.initialData.relato);
-
-        // Solicitação (Bar horizontal)
-        this.createChart('solicitacao', 'bar', {
-            ...commonOptions,
-            indexAxis: 'y',
-            scales: {
-                x: { 
-                    beginAtZero: true,
-                    grid: { display: false }
-                },
-                y: {
-                    grid: { display: false }
-                }
-            }
-        }, null, this.initialData.solicitacao);
+            });
+        });
     }
 
-    createChart(type, chartType, options, customColors = null, chartData = null) {
+    getChartTitle(type) {
+        const titles = {
+            tipo: 'Tipos de Atendimento',
+            funcionario: 'Atendimentos por Funcionário',
+            cliente: 'Atendimentos por Cliente',
+            sistema: 'Sistemas',
+            canal: 'Canais de Atendimento',
+            relato: 'Relatos de Atendimento',
+            solicitacao: 'Tipos de Solicitação'
+        };
+        return titles[type] || type;
+    }
+
+    createChart(type, chartType, options, customColors = null) {
         const elementId = `${type}Chart`;
         const canvas = document.getElementById(elementId);
         
@@ -172,23 +118,16 @@ class ChartManager {
         }
     
         const ctx = canvas.getContext('2d');
-        const data = chartData || { labels: [], values: [] };
+        const data = this.initialData[type] || { labels: [], values: [] };
         const dataLength = data.labels.length;
         const colors = customColors || this.colorPalette.getChartColors(dataLength);
-        var chartHeight = 300;
-    
-        // Calcular altura para gráficos de barra horizontal
-        if (chartType === 'bar' && options.indexAxis === 'y') {
-            const heightPerItem = 25; // altura por item
-            const minHeight = 300; // altura mínima
+        
+        // Ajusta altura para gráficos horizontais
+        if (chartType === 'bar') {
+            const minHeight = 300;
+            const heightPerItem = 30;
             const calculatedHeight = Math.max(minHeight, dataLength * heightPerItem);
-            
-            // Definir altura diretamente nas opções do Chart
-            if(calculatedHeight > chartHeight){
-                chartHeight = calculatedHeight;
-    
-                canvas.style.height = chartHeight+'px';
-            }
+            canvas.style.height = `${calculatedHeight}px`;
         }
     
         const chart = new Chart(ctx, {
@@ -200,25 +139,17 @@ class ChartManager {
                     backgroundColor: colors,
                     borderWidth: 1,
                     borderColor: colors.map(color => this.colorPalette.adjustOpacity(color, 0.8)),
-                    barThickness: 20
+                    // barThickness: 20
                 }]
             },
             options: {
                 ...options,
-                // maintainAspectRatio: false, // Importante para respeitar a altura definida
-                // responsive: true,
-                height: chartHeight,
                 onClick: (event, elements) => {
                     if (elements.length > 0) {
                         const index = elements[0].index;
-                        const value = this.charts[type].data.labels[index];
-                        console.debug(`Clique no gráfico ${type}:`, value);
-                        
+                        const value = chart.data.labels[index];
                         document.dispatchEvent(new CustomEvent('chartClick', {
-                            detail: {
-                                type: type,
-                                value: value
-                            }
+                            detail: { type, value }
                         }));
                     }
                 }
@@ -230,8 +161,6 @@ class ChartManager {
     }
     
     updateCharts(data) {
-        console.debug('Atualizando gráficos com dados:', data);
-        
         if (!data) {
             console.error('Dados inválidos para atualização dos gráficos');
             return;
@@ -260,6 +189,15 @@ class ChartManager {
                     baseColor;
             });
             
+            // Ajusta altura para gráficos horizontais
+            if (chart.config.type === 'bar') {
+                const canvas = chart.canvas;
+                const minHeight = 300;
+                const heightPerItem = 30;
+                const calculatedHeight = Math.max(minHeight, chartData.labels.length * heightPerItem);
+                canvas.style.height = `${calculatedHeight}px`;
+            }
+            
             chart.update('none');
         });
     }
@@ -272,4 +210,3 @@ class ChartManager {
         });
     }
 }
-

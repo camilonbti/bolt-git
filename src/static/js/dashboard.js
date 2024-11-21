@@ -3,24 +3,34 @@ class DashboardManager {
         console.info('Inicializando DashboardManager');
         this.timezone = 'America/Sao_Paulo';
         this.initializeComponents();
-        this.setupEventListeners();
     }
 
     async initializeComponents() {
         try {
-            // Inicializa gerenciador de dados primeiro e aguarda o carregamento
+            // Inicializa gerenciador de dados primeiro
             this.dataManager = new DashboardDataManager();
-            await this.dataManager.loadInitialData();
+            
+            // Aguarda o carregamento inicial dos dados
+            const initialData = await this.dataManager.loadInitialData();
+            
+            if (!initialData) {
+                throw new Error('Falha ao carregar dados iniciais');
+            }
             
             // Após ter os dados, inicializa os componentes visuais
-            this.chartManager = new ChartManager(this.dataManager.data.graficos);
+            this.chartManager = new ChartManager(initialData.graficos);
             this.tableManager = new TableManager();
             this.filterManager = new FilterManager();
-            
-            // Inicializa atualizador por último
             this.updater = new DashboardUpdater();
             
+            // Configura listeners de eventos
+            this.setupEventListeners();
+            
             console.debug('Componentes inicializados com sucesso');
+            
+            // Atualiza dashboard com dados iniciais
+            this.updateDashboard(initialData);
+            
         } catch (error) {
             console.error('Erro ao inicializar componentes:', error);
             this.showError('Erro ao inicializar dashboard');
@@ -35,13 +45,12 @@ class DashboardManager {
     }
 
     updateDashboard(data) {
-        console.debug('Atualizando dashboard com novos dados');
-        
-        try {
-            if (!data) {
-                throw new Error('Dados inválidos');
-            }
+        if (!data) {
+            console.error('Dados inválidos para atualização');
+            return;
+        }
 
+        try {
             this.updateKPIs(data.kpis || {});
             
             if (this.chartManager) {
@@ -54,10 +63,6 @@ class DashboardManager {
             
             this.updateTimestamp(data.ultima_atualizacao);
             
-            console.info('Dashboard atualizado com sucesso:', {
-                registros: data.registros?.length || 0,
-                graficos: Object.keys(data.graficos || {})
-            });
         } catch (error) {
             console.error('Erro ao atualizar dashboard:', error);
             this.showError('Erro ao atualizar dashboard');
@@ -74,17 +79,16 @@ class DashboardManager {
 
         try {
             if (elements.totalAtendimentos) {
-                elements.totalAtendimentos.textContent = Number(kpis.total_registros || 0).toLocaleString();
+                elements.totalAtendimentos.textContent = this.formatNumber(kpis.total_registros);
             }
             if (elements.totalPendentes) {
-                elements.totalPendentes.textContent = Number(kpis.total_pendentes || 0).toLocaleString();
+                elements.totalPendentes.textContent = this.formatNumber(kpis.total_pendentes);
             }
             if (elements.totalConcluidos) {
-                elements.totalConcluidos.textContent = Number(kpis.total_concluidos || 0).toLocaleString();
+                elements.totalConcluidos.textContent = this.formatNumber(kpis.total_concluidos);
             }
             if (elements.taxaConclusao) {
-                const taxa = Number(kpis.taxa_conclusao || 0);
-                elements.taxaConclusao.textContent = `${taxa.toFixed(1)}%`;
+                elements.taxaConclusao.textContent = `${this.formatNumber(kpis.taxa_conclusao, 1)}%`;
             }
         } catch (error) {
             console.error('Erro ao atualizar KPIs:', error);
@@ -95,8 +99,11 @@ class DashboardManager {
         const element = document.getElementById('lastUpdate');
         if (element && timestamp) {
             try {
-                // Converte timestamp para data local considerando timezone do Brasil
-                const date = new Date(timestamp);
+                const date = new Date(parseInt(timestamp));
+                if (isNaN(date.getTime())) {
+                    throw new Error('Invalid timestamp');
+                }
+                
                 const options = {
                     timeZone: this.timezone,
                     year: 'numeric',
@@ -107,12 +114,21 @@ class DashboardManager {
                     second: '2-digit',
                     hour12: false
                 };
-                element.textContent = new Intl.DateTimeFormat('pt-BR', options).format(date);
+                
+                element.textContent = date.toLocaleString('pt-BR', options);
             } catch (error) {
                 console.error('Erro ao formatar timestamp:', error);
                 element.textContent = 'Data inválida';
             }
         }
+    }
+
+    formatNumber(value, decimals = 0) {
+        const num = Number(value || 0);
+        return num.toLocaleString('pt-BR', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
     }
 
     showError(message) {
