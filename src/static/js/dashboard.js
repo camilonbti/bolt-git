@@ -6,13 +6,14 @@ class DashboardManager {
         this.setupEventListeners();
     }
 
-    initializeComponents() {
+    async initializeComponents() {
         try {
-            // Inicializa gerenciador de dados primeiro
+            // Inicializa gerenciador de dados primeiro e aguarda o carregamento
             this.dataManager = new DashboardDataManager();
+            await this.dataManager.loadInitialData();
             
-            // Inicializa componentes de UI
-            this.chartManager = new ChartManager();
+            // Após ter os dados, inicializa os componentes visuais
+            this.chartManager = new ChartManager(this.dataManager.data.graficos);
             this.tableManager = new TableManager();
             this.filterManager = new FilterManager();
             

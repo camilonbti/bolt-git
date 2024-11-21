@@ -1,8 +1,9 @@
 class ChartManager {
-    constructor() {
+    constructor(initialData) {
         console.info('Inicializando ChartManager');
         this.charts = {};
         this.colorPalette = new ColorPaletteManager();
+        this.initialData = initialData || {};
         this.initCharts();
         this.setupEventListeners();
     }
@@ -20,7 +21,7 @@ class ChartManager {
     }
 
     initCharts() {
-        console.debug('Inicializando gráficos');
+        console.debug('Inicializando gráficos com dados:', this.initialData);
         
         const commonOptions = {
             responsive: true,
@@ -58,7 +59,7 @@ class ChartManager {
                     position: 'right'
                 }
             }
-        }, this.colorPalette.getStatusColors());
+        }, this.colorPalette.getStatusColors(), this.initialData.status);
 
         // Tipo de Atendimento (Bar horizontal)
         this.createChart('tipo', 'bar', {
@@ -73,7 +74,7 @@ class ChartManager {
                     grid: { display: false }
                 }
             }
-        });
+        }, null, this.initialData.tipo);
 
         // Funcionário (Bar)
         this.createChart('funcionario', 'bar', {
@@ -84,14 +85,10 @@ class ChartManager {
                     grid: { display: false }
                 },
                 x: {
-                    grid: { display: false },
-                    ticks: {
-                        maxRotation: 45,
-                        minRotation: 45
-                    }
+                    grid: { display: false }
                 }
             }
-        });
+        }, null, this.initialData.funcionario);
 
         // Cliente (Bar horizontal)
         this.createChart('cliente', 'bar', {
@@ -106,7 +103,7 @@ class ChartManager {
                     grid: { display: false }
                 }
             }
-        });
+        }, null, this.initialData.cliente);
 
         // Sistema (Pie)
         this.createChart('sistema', 'pie', {
@@ -118,7 +115,7 @@ class ChartManager {
                     position: 'right'
                 }
             }
-        });
+        }, null, this.initialData.sistema);
 
         // Canal (Bar)
         this.createChart('canal', 'bar', {
@@ -132,9 +129,9 @@ class ChartManager {
                     grid: { display: false }
                 }
             }
-        });
+        }, null, this.initialData.canal);
 
-        // Relato (Bar)
+        // Relato (Bar horizontal)
         this.createChart('relato', 'bar', {
             ...commonOptions,
             indexAxis: 'y',
@@ -147,9 +144,9 @@ class ChartManager {
                     grid: { display: false }
                 }
             }
-        });
+        }, null, this.initialData.relato);
 
-        // Solicitação (Bar)
+        // Solicitação (Bar horizontal)
         this.createChart('solicitacao', 'bar', {
             ...commonOptions,
             indexAxis: 'y',
@@ -162,10 +159,10 @@ class ChartManager {
                     grid: { display: false }
                 }
             }
-        });
+        }, null, this.initialData.solicitacao);
     }
 
-    createChart(type, chartType, options, customColors = null) {
+    createChart(type, chartType, options, customColors = null, chartData = null) {
         const elementId = `${type}Chart`;
         const canvas = document.getElementById(elementId);
         
@@ -173,23 +170,44 @@ class ChartManager {
             console.error(`Elemento ${elementId} não encontrado`);
             return;
         }
-
+    
         const ctx = canvas.getContext('2d');
-        const colors = customColors || this.colorPalette.getChartColors(10);
-
-        this.charts[type] = new Chart(ctx, {
+        const data = chartData || { labels: [], values: [] };
+        const dataLength = data.labels.length;
+        const colors = customColors || this.colorPalette.getChartColors(dataLength);
+        var chartHeight = 300;
+    
+        // Calcular altura para gráficos de barra horizontal
+        if (chartType === 'bar' && options.indexAxis === 'y') {
+            const heightPerItem = 25; // altura por item
+            const minHeight = 300; // altura mínima
+            const calculatedHeight = Math.max(minHeight, dataLength * heightPerItem);
+            
+            // Definir altura diretamente nas opções do Chart
+            if(calculatedHeight > chartHeight){
+                chartHeight = calculatedHeight;
+    
+                canvas.style.height = chartHeight+'px';
+            }
+        }
+    
+        const chart = new Chart(ctx, {
             type: chartType,
             data: {
-                labels: [],
+                labels: data.labels,
                 datasets: [{
-                    data: [],
+                    data: data.values,
                     backgroundColor: colors,
                     borderWidth: 1,
-                    borderColor: colors.map(color => this.colorPalette.adjustOpacity(color, 0.8))
+                    borderColor: colors.map(color => this.colorPalette.adjustOpacity(color, 0.8)),
+                    barThickness: 20
                 }]
             },
             options: {
                 ...options,
+                // maintainAspectRatio: false, // Importante para respeitar a altura definida
+                // responsive: true,
+                height: chartHeight,
                 onClick: (event, elements) => {
                     if (elements.length > 0) {
                         const index = elements[0].index;
@@ -206,8 +224,11 @@ class ChartManager {
                 }
             }
         });
+    
+        this.charts[type] = chart;
+        return chart;
     }
-
+    
     updateCharts(data) {
         console.debug('Atualizando gráficos com dados:', data);
         
@@ -251,3 +272,4 @@ class ChartManager {
         });
     }
 }
+

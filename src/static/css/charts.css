@@ -22,10 +22,36 @@
     text-overflow: ellipsis;
 }
 
-.chart-container {
+.chart-container-father{
     position: relative;
     height: 300px;
     width: 100%;
+    overflow: hidden;
+}
+.chart-container {
+    position: relative;
+    min-height: 300px;
+    width: 100%;
+    overflow: hidden;
+}
+
+.chart-container:hover {
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}
+
+.chart-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chart-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chart-container::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
 }
 
 /* Animações */

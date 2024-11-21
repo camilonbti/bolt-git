@@ -191,13 +191,13 @@ class DashboardDataManager {
     #calcularGraficos(registros) {
         return {
             status: this.#contarValores(registros, 'status_atendimento'),
-            tipo: this.#contarValores(registros, 'tipo_atendimento', 10),
-            funcionario: this.#contarValores(registros, 'funcionario', 10),
-            cliente: this.#contarValores(registros, 'cliente', 10),
-            sistema: this.#contarValores(registros, 'sistema', 10),
+            tipo: this.#contarValores(registros, 'tipo_atendimento'),
+            funcionario: this.#contarValores(registros, 'funcionario'),
+            cliente: this.#contarValores(registros, 'cliente'),
+            sistema: this.#contarValores(registros, 'sistema'),
             canal: this.#contarValores(registros, 'canal_atendimento'),
-            relato: this.#contarValores(registros, 'solicitacao_cliente', 10),
-            solicitacao: this.#contarValores(registros, 'tipo_atendimento', 10)
+            relato: this.#contarValores(registros, 'solicitacao_cliente'),
+            solicitacao: this.#contarValores(registros, 'tipo_atendimento')
         };
     }
 
@@ -209,8 +209,7 @@ class DashboardDataManager {
         }, {});
 
         const ordenado = Object.entries(contagem)
-            .sort(([,a], [,b]) => b - a)
-            .slice(0, 10);
+            .sort(([,a], [,b]) => b - a);
 
         return {
             labels: ordenado.map(([label]) => label),

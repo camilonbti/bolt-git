@@ -222,14 +222,14 @@ class ProcessadorDados:
         try:
             graficos = {
                 'status': self._contar_por_coluna(df, 'status_atendimento'),
-                'tipo': self._contar_por_coluna(df, 'tipo_atendimento', 10),
-                'funcionario': self._contar_por_coluna(df, 'funcionario', 10),
-                'cliente': self._contar_por_coluna(df, 'cliente', 10),
-                'sistema': self._contar_por_coluna(df, 'sistema', 10),
+                'tipo': self._contar_por_coluna(df, 'tipo_atendimento'),
+                'funcionario': self._contar_por_coluna(df, 'funcionario'),
+                'cliente': self._contar_por_coluna(df, 'cliente'),
+                'sistema': self._contar_por_coluna(df, 'sistema'),
                 'canal': self._contar_por_coluna(df, 'canal_atendimento'),
                 'timeline': self._gerar_timeline(df),
-                'relato': self._contar_por_coluna(df, 'solicitacao_cliente', 10),
-                'solicitacao': self._contar_por_coluna(df, 'tipo_atendimento', 10)
+                'relato': self._contar_por_coluna(df, 'solicitacao_cliente'),
+                'solicitacao': self._contar_por_coluna(df, 'tipo_atendimento')
             }
             
             logger.debug("Dados dos gráficos gerados com sucesso")
@@ -239,7 +239,7 @@ class ProcessadorDados:
             logger.error(f"Erro ao gerar dados dos gráficos: {str(e)}")
             return self._get_graficos_vazios()
 
-    def _contar_por_coluna(self, df: pd.DataFrame, coluna: str, limite: Optional[int] = None) -> Dict[str, List]:
+    def _contar_por_coluna(self, df: pd.DataFrame, coluna: str) -> Dict[str, List]:
         """Conta ocorrências em uma coluna."""
         try:
             if coluna not in df.columns:
@@ -247,8 +247,6 @@ class ProcessadorDados:
                 return {'labels': [], 'values': []}
                 
             contagem = df[coluna].value_counts()
-            if limite:
-                contagem = contagem.head(limite)
             return {
                 'labels': contagem.index.tolist(),
                 'values': contagem.values.tolist()
