@@ -1,106 +1,89 @@
 class DashboardUpdater {
     constructor() {
-        this.setupEventListeners();
-        this.isUpdating = false;
-        this.timezone = 'America/Sao_Paulo';
+        this.chartManager = new ChartManager();
+        this.kpiManager = new KPIManager();
+        this.tableManager = new TableManager();
     }
-    
-    setupEventListeners() {
-        const updateButton = document.querySelector('.btn-update');
-        if (updateButton) {
-            updateButton.addEventListener('click', () => this.updateDashboard());
-        }
-    }
-    
-    async updateDashboard() {
-        if (this.isUpdating) return;
-        
+
+    // Atualiza todos os componentes do dashboard
+    updateDashboard(data) {
         try {
-            this.isUpdating = true;
-            const updateButton = document.querySelector('.btn-update');
-            if (updateButton) {
-                updateButton.disabled = true;
-                updateButton.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Atualizando...';
+            console.info('Iniciando atualização do dashboard com novos dados');
+
+            // Se os dados estiverem vazios, limpa todos os componentes
+            if (!data || data.length === 0) {
+                console.warn('Dados vazios recebidos para atualização');
+                this.clearComponents();
+                this.showUserMessage('Nenhum dado disponível para exibição.');
+                return;
             }
 
-            const response = await fetch('/api/data');
-            if (!response.ok) {
-                throw new Error(`Erro ao atualizar dados: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            if (!data || !data.registros) {
-                throw new Error('Dados inválidos recebidos do servidor');
-            }
+            // Atualiza KPIs com base nos dados
+            this.updateKPIs(data);
 
-            // Formata datas considerando timezone
-            data.registros = data.registros.map(registro => ({
-                ...registro,
-                data_hora: this.formatDateTime(registro.data_hora)
-            }));
+            // Atualiza gráficos com base nos dados
+            this.updateCharts(data);
 
-            // Atualiza timestamp de última atualização
-            data.ultima_atualizacao = this.formatDateTime(new Date());
+            // Atualiza a tabela de atendimentos com base nos dados
+            this.updateTable(data);
 
-            window.dashboardManager?.dataManager?.update(data);
-            this.showUpdateSuccess();
-            
+            console.debug('Dashboard atualizado com sucesso');
         } catch (error) {
-            console.error('Erro ao atualizar dashboard:', error);
-            this.showUpdateError(error.message);
-        } finally {
-            this.isUpdating = false;
-            const updateButton = document.querySelector('.btn-update');
-            if (updateButton) {
-                updateButton.disabled = false;
-                updateButton.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar';
-            }
+            console.error('Erro ao atualizar o dashboard:', error);
+            this.clearComponents();
+            this.showUserMessage('Ocorreu um erro ao atualizar o dashboard. Tente novamente.');
         }
     }
 
-    formatDateTime(dateStr) {
-        if (!dateStr) return null;
-        
+    // Atualiza os KPIs no dashboard
+    updateKPIs(data) {
         try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return null;
-
-            return date.toLocaleString('pt-BR', {
-                timeZone: this.timezone,
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            });
+            console.debug('Calculando e atualizando KPIs...');
+            const kpis = this.kpiManager.calculateKPIs(data);
+            this.kpiManager.updateKPIs(kpis);
         } catch (error) {
-            console.error('Erro ao formatar data:', error);
-            return null;
+            console.error('Erro ao atualizar KPIs:', error);
         }
     }
-    
-    showUpdateSuccess() {
-        const successAlert = document.getElementById('updateSuccess');
-        if (successAlert) {
-            successAlert.classList.remove('d-none');
-            setTimeout(() => {
-                successAlert.classList.add('d-none');
-            }, 3000);
+
+    // Atualiza os gráficos no dashboard
+    updateCharts(data) {
+        try {
+            console.debug('Atualizando gráficos com dados...');
+            this.chartManager.updateCharts(data);
+        } catch (error) {
+            console.error('Erro ao atualizar gráficos:', error);
         }
     }
-    
-    showUpdateError(message) {
-        const errorAlert = document.getElementById('updateError');
-        if (errorAlert) {
-            const errorMessage = errorAlert.querySelector('.error-message');
-            if (errorMessage) {
-                errorMessage.textContent = message;
-            }
-            errorAlert.classList.remove('d-none');
+
+    // Atualiza a tabela de atendimentos no dashboard
+    updateTable(data) {
+        try {
+            console.debug('Atualizando tabela com dados...');
+            this.tableManager.updateTable(data);
+        } catch (error) {
+            console.error('Erro ao atualizar tabela:', error);
+        }
+    }
+
+    // Limpa todos os componentes do dashboard
+    clearComponents() {
+        console.debug('Limpando componentes do dashboard...');
+        this.chartManager.clearCharts();
+        this.kpiManager.clearKPIs();
+        this.tableManager.clearTable();
+    }
+
+    // Exibe uma mensagem de erro para o usuário
+    showUserMessage(message) {
+        const messageElement = document.getElementById('userMessage');
+        if (messageElement) {
+            messageElement.textContent = message;
+            messageElement.classList.remove('d-none');
+
+            // Remove a mensagem após alguns segundos
             setTimeout(() => {
-                errorAlert.classList.add('d-none');
+                messageElement.classList.add('d-none');
             }, 5000);
         }
     }
