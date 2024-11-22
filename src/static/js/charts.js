@@ -4,7 +4,6 @@ class ChartManager {
         this.charts = {};
         this.colorPalette = new ColorPaletteManager();
         this.initialData = initialData || {};
-        Chart.register(ChartDataLabels); // Registra o plugin globalmente
         this.initCharts();
         this.setupEventListeners();
     }
@@ -17,7 +16,7 @@ class ChartManager {
         });
 
         window.addEventListener('resize', () => {
-            this.resizeCharts();
+            requestAnimationFrame(() => this.resizeCharts());
         });
     }
 
@@ -34,12 +33,8 @@ class ChartManager {
                 },
                 tooltip: {
                     backgroundColor: 'rgba(0,0,0,0.8)',
-                    titleFont: {
-                        size: 13
-                    },
-                    bodyFont: {
-                        size: 12
-                    },
+                    titleFont: { size: 13 },
+                    bodyFont: { size: 12 },
                     padding: 10,
                     cornerRadius: 4,
                     callbacks: {
@@ -49,21 +44,6 @@ class ChartManager {
                             const percentage = ((value / total) * 100).toFixed(1);
                             return `${value} (${percentage}%)`;
                         }
-                    }
-                },
-                datalabels: {
-                    color: '#666',
-                    font: {
-                        weight: '500',
-                        size: 11
-                    },
-                    anchor: 'end',
-                    align: 'right',
-                    offset: 4,
-                    formatter: (value, context) => {
-                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                        const percentage = ((value / total) * 100).toFixed(1);
-                        return `${value} (${percentage}%)`;
                     }
                 }
             },
@@ -75,9 +55,7 @@ class ChartManager {
                         drawBorder: false
                     },
                     ticks: {
-                        font: {
-                            size: 11
-                        },
+                        font: { size: 11 },
                         color: '#666'
                     }
                 },
@@ -110,9 +88,26 @@ class ChartManager {
             }
         };
 
-        // Todos os gráficos como barras horizontais
-        const allCharts = [
-            'status',
+        // Status como doughnut
+        this.createChart('status', 'doughnut', {
+            ...commonOptions,
+            indexAxis: undefined,
+            cutout: '60%',
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'right',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                }
+            }
+        });
+
+        // Demais gráficos como barras horizontais
+        const barCharts = [
             'tipo',
             'funcionario',
             'cliente',
@@ -122,33 +117,23 @@ class ChartManager {
             'solicitacao'
         ];
 
-        allCharts.forEach(type => {
-            const options = {...commonOptions};
-            
-            // Configurações específicas para cada tipo de gráfico
-            if (type === 'status') {
-                options.plugins.datalabels.color = '#fff';
-                options.plugins.datalabels.font.weight = 'bold';
-            }
-
-            // Configurações de hover e interatividade
-            options.hover = {
-                mode: 'nearest',
-                intersect: false,
-                animationDuration: 150
-            };
-
-            // Configurações de barra
-            options.datasets = {
-                bar: {
-                    borderWidth: 0,
-                    borderRadius: 4,
-                    barPercentage: 0.8,
-                    categoryPercentage: 0.9
+        barCharts.forEach(type => {
+            this.createChart(type, 'bar', {
+                ...commonOptions,
+                hover: {
+                    mode: 'nearest',
+                    intersect: false,
+                    animationDuration: 150
+                },
+                datasets: {
+                    bar: {
+                        borderWidth: 0,
+                        borderRadius: 4,
+                        barPercentage: 0.8,
+                        categoryPercentage: 0.9
+                    }
                 }
-            };
-            
-            this.createChart(type, 'bar', options);
+            });
         });
     }
 
@@ -161,42 +146,25 @@ class ChartManager {
         const paddingBottom = 40;
         const availableHeight = containerHeight - (paddingTop + paddingBottom);
 
-        if (dataLength === 0) {
-            return {
-                totalHeight: containerHeight,
-                needsScroll: false,
-                contentHeight: 0,
-                barHeight: maxBarHeight,
-                barPercentage: 0.8,
-                categoryPercentage: 0.9
-            };
-        }
-
         if (dataLength <= maxBarsWithoutScroll) {
             const optimalBarHeight = Math.min(maxBarHeight, availableHeight / dataLength);
-            const totalContentHeight = dataLength * optimalBarHeight;
-            
-            // Ajusta a proporção das barras baseado na quantidade
             const barPercentage = Math.max(0.6, Math.min(0.8, 1 - (dataLength / maxBarsWithoutScroll) * 0.2));
             
             return {
-                totalHeight: containerHeight,
-                needsScroll: false,
-                contentHeight: totalContentHeight,
+                height: containerHeight,
                 barHeight: optimalBarHeight,
                 barPercentage: barPercentage,
-                categoryPercentage: 0.9
+                categoryPercentage: 0.9,
+                needsScroll: false
             };
         }
 
-        const totalContentHeight = dataLength * minBarHeight;
         return {
-            totalHeight: Math.max(containerHeight, totalContentHeight + paddingTop + paddingBottom),
-            needsScroll: true,
-            contentHeight: totalContentHeight,
+            height: dataLength * minBarHeight + paddingTop + paddingBottom,
             barHeight: minBarHeight,
             barPercentage: 0.6,
-            categoryPercentage: 0.9
+            categoryPercentage: 0.9,
+            needsScroll: true
         };
     }
 
@@ -219,7 +187,7 @@ class ChartManager {
         const dimensions = this.calculateChartDimensions(dataLength);
         
         if (dimensions.needsScroll) {
-            canvas.style.height = `${dimensions.totalHeight}px`;
+            canvas.parentElement.style.height = `${dimensions.height}px`;
         }
     
         const chart = new Chart(ctx, {
@@ -232,7 +200,10 @@ class ChartManager {
                     borderWidth: 0,
                     borderRadius: 4,
                     barPercentage: dimensions.barPercentage,
-                    categoryPercentage: dimensions.categoryPercentage
+                    categoryPercentage: dimensions.categoryPercentage,
+                    hoverBackgroundColor: colors.map(color => 
+                        this.colorPalette.adjustOpacity(color, 0.8)
+                    )
                 }]
             },
             options: {
@@ -268,7 +239,8 @@ class ChartManager {
                 return;
             }
 
-            const activeFilters = window.filterManager?.getActiveFilters() || {};
+            // Usa filterManager através do dashboardManager para manter consistência
+            const activeFilters = window.dashboardManager?.filterManager?.getActiveFilters() || {};
             const dataLength = chartData.labels.length;
             const dimensions = this.calculateChartDimensions(dataLength);
             
@@ -285,15 +257,17 @@ class ChartManager {
                     baseColor;
             });
 
-            // Atualiza as proporções das barras
+            chart.data.datasets[0].hoverBackgroundColor = chart.data.datasets[0].backgroundColor.map(color => 
+                this.colorPalette.adjustOpacity(color, 0.8)
+            );
+
             chart.data.datasets[0].barPercentage = dimensions.barPercentage;
             chart.data.datasets[0].categoryPercentage = dimensions.categoryPercentage;
             
-            const canvas = chart.canvas;
             if (dimensions.needsScroll) {
-                canvas.style.height = `${dimensions.totalHeight}px`;
+                chart.canvas.parentElement.style.height = `${dimensions.height}px`;
             } else {
-                canvas.style.height = '300px';
+                chart.canvas.parentElement.style.height = '300px';
             }
             
             chart.update('none');
@@ -307,7 +281,7 @@ class ChartManager {
                 const dimensions = this.calculateChartDimensions(dataLength);
                 
                 if (dimensions.needsScroll) {
-                    chart.canvas.style.height = `${dimensions.totalHeight}px`;
+                    chart.canvas.parentElement.style.height = `${dimensions.height}px`;
                 }
                 
                 chart.resize();

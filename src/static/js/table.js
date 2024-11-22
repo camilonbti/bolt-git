@@ -1,5 +1,6 @@
 class TableManager {
     constructor() {
+        console.info('Inicializando TableManager');
         this.table = document.getElementById('tableBody');
         this.pagination = document.getElementById('pagination');
         this.itemsPerPage = 10;
@@ -10,7 +11,6 @@ class TableManager {
             return;
         }
 
-        console.info('TableManager inicializado com sucesso');
         this.setupEventListeners();
     }
 
@@ -41,36 +41,29 @@ class TableManager {
         if (!data_hora_raw) return { date: 'N/A', time: '' };
         
         try {
-            // Log do valor bruto para debug
-            console.debug('Valor bruto data_hora:', data_hora_raw);
+            console.debug('Formatando data/hora:', data_hora_raw);
             
-            // Converte para número se for string
-            const timestamp = typeof data_hora_raw === 'string' ? 
-                parseInt(data_hora_raw, 10) : data_hora_raw;
-            
-            // Verifica se é um número válido
-            if (isNaN(timestamp)) {
-                console.warn('Timestamp inválido:', data_hora_raw);
+            // Usa DateUtils para formatar o timestamp
+            const timestamp = DateUtils.formatTimestamp(data_hora_raw);
+            if (!timestamp) {
                 return { date: 'Data inválida', time: '' };
             }
 
             const date = new Date(timestamp);
+            const formattedDate = DateUtils.formatDateTime(date);
             
-            // Verifica se a data é válida
-            if (isNaN(date.getTime())) {
-                console.warn('Data inválida para timestamp:', timestamp);
+            if (!formattedDate) {
                 return { date: 'Data inválida', time: '' };
             }
 
+            const [dateStr, timeStr] = formattedDate.split(' ');
             return {
-                date: date.toLocaleDateString('pt-BR'),
-                time: date.toLocaleTimeString('pt-BR', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })
+                date: dateStr,
+                time: timeStr.substring(0, 5) // HH:mm
             };
+
         } catch (error) {
-            console.error('Erro ao formatar data_hora:', data_hora_raw, error);
+            console.error('Erro ao formatar data/hora:', error);
             return { date: 'Erro', time: '' };
         }
     }

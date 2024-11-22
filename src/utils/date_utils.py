@@ -2,8 +2,13 @@
 Utilitário centralizado para manipulação de datas
 """
 from datetime import datetime, time
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Dict  # Adicionando Dict
 from zoneinfo import ZoneInfo
+import logging
+
+
+# Configuração do logger
+logger = logging.getLogger(__name__)
 
 # Timezone padrão (São Paulo/Brasília)
 TIMEZONE = ZoneInfo("America/Sao_Paulo")
@@ -27,9 +32,11 @@ def get_date_with_min_time(date_str: str) -> datetime:
         datetime: Data com horário inicial do dia
     """
     try:
+        logger.debug(f"Convertendo data {date_str} para início do dia")
         date = datetime.strptime(date_str, DATE_FORMAT)
         return datetime.combine(date.date(), START_TIME, tzinfo=TIMEZONE)
     except ValueError as e:
+        logger.error(f"Data inválida: {date_str}", exc_info=True)
         raise ValueError(f"Data inválida: {date_str}. Use o formato YYYY-MM-DD") from e
 
 def get_date_with_max_time(date_str: str) -> datetime:
@@ -43,9 +50,11 @@ def get_date_with_max_time(date_str: str) -> datetime:
         datetime: Data com horário final do dia
     """
     try:
+        logger.debug(f"Convertendo data {date_str} para fim do dia")
         date = datetime.strptime(date_str, DATE_FORMAT)
         return datetime.combine(date.date(), END_TIME, tzinfo=TIMEZONE)
     except ValueError as e:
+        logger.error(f"Data inválida: {date_str}", exc_info=True)
         raise ValueError(f"Data inválida: {date_str}. Use o formato YYYY-MM-DD") from e
 
 def format_date_range(
@@ -65,25 +74,29 @@ def format_date_range(
         Uma data ou tupla de datas com timezone
     """
     def parse_date(date_str: Optional[Union[str, datetime]], is_end: bool = False) -> datetime:
-        if isinstance(date_str, datetime):
-            date = date_str
-        elif date_str:
-            try:
+        try:
+            logger.debug(f"Parseando data: {date_str}, is_end: {is_end}")
+            
+            if isinstance(date_str, datetime):
+                date = date_str
+            elif date_str:
                 if 'T' in str(date_str):
                     date = datetime.fromisoformat(str(date_str).replace('Z', '+00:00'))
                 else:
                     date = datetime.strptime(str(date_str), DATETIME_FORMAT)
-            except ValueError:
+            else:
                 date = datetime.now(TIMEZONE)
-        else:
-            date = datetime.now(TIMEZONE)
+                
+            if date.tzinfo is None:
+                date = date.replace(tzinfo=TIMEZONE)
+                
+            if is_end:
+                return datetime.combine(date.date(), END_TIME, tzinfo=TIMEZONE)
+            return datetime.combine(date.date(), START_TIME, tzinfo=TIMEZONE)
             
-        if date.tzinfo is None:
-            date = date.replace(tzinfo=TIMEZONE)
-            
-        if is_end:
-            return datetime.combine(date.date(), END_TIME, tzinfo=TIMEZONE)
-        return datetime.combine(date.date(), START_TIME, tzinfo=TIMEZONE)
+        except Exception as e:
+            logger.error(f"Erro ao parsear data: {date_str}", exc_info=True)
+            return datetime.now(TIMEZONE)
     
     if date_only:
         return parse_date(start_date)
@@ -103,7 +116,20 @@ def format_timestamp(date: datetime) -> int:
     Returns:
         int: Timestamp em milissegundos
     """
-    return int(date.timestamp() * 1000)
+    try:
+        if not isinstance(date, datetime):
+            raise ValueError("Input deve ser um objeto datetime")
+            
+        if date.tzinfo is None:
+            date = date.replace(tzinfo=TIMEZONE)
+            
+        timestamp = int(date.timestamp() * 1000)
+        logger.debug(f"Timestamp gerado: {timestamp} ms")
+        return timestamp
+        
+    except Exception as e:
+        logger.error(f"Erro ao formatar timestamp: {str(e)}", exc_info=True)
+        return int(datetime.now(TIMEZONE).timestamp() * 1000)
 
 def format_display_date(date: datetime) -> str:
     """
@@ -115,7 +141,20 @@ def format_display_date(date: datetime) -> str:
     Returns:
         str: Data formatada (dd/mm/yyyy HH:MM:SS)
     """
-    return date.strftime(DATETIME_FORMAT)
+    try:
+        if not isinstance(date, datetime):
+            raise ValueError("Input deve ser um objeto datetime")
+            
+        if date.tzinfo is None:
+            date = date.replace(tzinfo=TIMEZONE)
+            
+        formatted = date.strftime(DATETIME_FORMAT)
+        logger.debug(f"Data formatada: {formatted}")
+        return formatted
+        
+    except Exception as e:
+        logger.error(f"Erro ao formatar data para exibição: {str(e)}", exc_info=True)
+        return datetime.now(TIMEZONE).strftime(DATETIME_FORMAT)
 
 def validate_dates(start_date: str, end_date: str) -> bool:
     """
@@ -129,14 +168,18 @@ def validate_dates(start_date: str, end_date: str) -> bool:
         bool: True se as datas são válidas
     """
     try:
+        logger.debug(f"Validando datas - início: {start_date}, fim: {end_date}")
         start = get_date_with_min_time(start_date)
         end = get_date_with_max_time(end_date)
         
         if start > end:
+            logger.warning(f"Data inicial ({start}) maior que final ({end})")
             return False
             
         return True
-    except ValueError:
+        
+    except ValueError as e:
+        logger.error(f"Erro ao validar datas: {str(e)}", exc_info=True)
         return False
 
 def get_current_time() -> datetime:
@@ -147,3 +190,92 @@ def get_current_time() -> datetime:
         datetime: Data/hora atual
     """
     return datetime.now(TIMEZONE)
+
+def format_date_for_input(date: datetime) -> str:
+    """
+    Formata data para uso em campos input[type="date"].
+    
+    Args:
+        date: Data a ser formatada
+        
+    Returns:
+        str: Data formatada no padrão YYYY-MM-DD
+    """
+    try:
+        if not isinstance(date, datetime):
+            raise ValueError("Input deve ser um objeto datetime")
+            
+        if date.tzinfo is None:
+            date = date.replace(tzinfo=TIMEZONE)
+            
+        return date.strftime(DATE_FORMAT)
+        
+    except Exception as e:
+        logger.error(f"Erro ao formatar data para input: {str(e)}", exc_info=True)
+        return datetime.now(TIMEZONE).strftime(DATE_FORMAT)
+
+def initialize_date_fields() -> Dict[str, str]:
+    """
+    Inicializa campos de data com primeiro e último dia do mês atual.
+    
+    Returns:
+        Dict com datas inicial e final formatadas para input
+    """
+    try:
+        now = get_current_time()
+        first_day = now.replace(day=1)
+        
+        return {
+            'start': format_date_for_input(first_day),
+            'end': format_date_for_input(now)
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro ao inicializar campos de data: {str(e)}", exc_info=True)
+        now = datetime.now(TIMEZONE)
+        return {
+            'start': format_date_for_input(now),
+            'end': format_date_for_input(now)
+        }
+
+def parse_timestamp(value: Union[str, int, datetime]) -> int:
+    """
+    Converte diferentes formatos de data/hora para timestamp em milissegundos.
+    
+    Args:
+        value: Valor a ser convertido (string, int ou datetime)
+        
+    Returns:
+        int: Timestamp em milissegundos
+    """
+    try:
+        # Se já for datetime
+        if isinstance(value, datetime):
+            return format_timestamp(value)
+            
+        # Se for número
+        if isinstance(value, (int, float)):
+            # Ajusta para milissegundos se necessário
+            return int(value) * 1000 if len(str(int(value))) <= 10 else int(value)
+            
+        # Se for string
+        if isinstance(value, str):
+            # Tenta converter string de data BR
+            if '/' in value:
+                date = datetime.strptime(value, DATETIME_FORMAT)
+                return format_timestamp(date)
+                
+            # Tenta converter string ISO
+            if 'T' in value:
+                date = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                return format_timestamp(date)
+                
+            # Tenta converter timestamp string
+            return parse_timestamp(float(value))
+            
+        raise ValueError(f"Formato de data inválido: {value}")
+        
+    except Exception as e:
+        logger.error(f"Erro ao converter timestamp: {str(e)}", exc_info=True)
+        return format_timestamp(get_current_time())
+

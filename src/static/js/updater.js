@@ -1,8 +1,8 @@
 class DashboardUpdater {
     constructor() {
+        console.info('Inicializando DashboardUpdater');
         this.setupEventListeners();
         this.isUpdating = false;
-        this.timezone = 'America/Sao_Paulo';
     }
     
     setupEventListeners() {
@@ -13,7 +13,10 @@ class DashboardUpdater {
     }
     
     async updateDashboard() {
-        if (this.isUpdating) return;
+        if (this.isUpdating) {
+            console.debug('Atualização já em andamento');
+            return;
+        }
         
         try {
             this.isUpdating = true;
@@ -23,6 +26,7 @@ class DashboardUpdater {
                 updateButton.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Atualizando...';
             }
 
+            console.debug('Iniciando requisição de atualização');
             const response = await fetch('/api/data');
             if (!response.ok) {
                 throw new Error(`Erro ao atualizar dados: ${response.statusText}`);
@@ -33,14 +37,19 @@ class DashboardUpdater {
                 throw new Error('Dados inválidos recebidos do servidor');
             }
 
-            // Formata datas considerando timezone
+            // Processa timestamps usando DateUtils
             data.registros = data.registros.map(registro => ({
                 ...registro,
-                data_hora: this.formatDateTime(registro.data_hora)
+                data_hora: DateUtils.formatTimestamp(registro.data_hora)
             }));
 
             // Atualiza timestamp de última atualização
-            data.ultima_atualizacao = this.formatDateTime(new Date());
+            data.ultima_atualizacao = DateUtils.formatTimestamp(new Date());
+
+            console.info('Dados atualizados com sucesso:', {
+                registros: data.registros.length,
+                timestamp: DateUtils.formatDateTime(new Date())
+            });
 
             window.dashboardManager?.dataManager?.update(data);
             this.showUpdateSuccess();
@@ -55,29 +64,6 @@ class DashboardUpdater {
                 updateButton.disabled = false;
                 updateButton.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar';
             }
-        }
-    }
-
-    formatDateTime(dateStr) {
-        if (!dateStr) return null;
-        
-        try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return null;
-
-            return date.toLocaleString('pt-BR', {
-                timeZone: this.timezone,
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            });
-        } catch (error) {
-            console.error('Erro ao formatar data:', error);
-            return null;
         }
     }
     

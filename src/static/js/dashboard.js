@@ -32,6 +32,11 @@ class DashboardManager {
             console.debug('Evento de atualização recebido');
             this.updateDashboard(event.detail);
         });
+
+        document.addEventListener('filterChange', (event) => {
+            console.debug('Evento de filtro recebido:', event.detail);
+            this.applyFilters(event.detail);
+        });
     }
 
     updateDashboard(data) {
@@ -74,17 +79,16 @@ class DashboardManager {
 
         try {
             if (elements.totalAtendimentos) {
-                elements.totalAtendimentos.textContent = Number(kpis.total_registros || 0).toLocaleString();
+                elements.totalAtendimentos.textContent = this.formatNumber(kpis.total_registros);
             }
             if (elements.totalPendentes) {
-                elements.totalPendentes.textContent = Number(kpis.total_pendentes || 0).toLocaleString();
+                elements.totalPendentes.textContent = this.formatNumber(kpis.total_pendentes);
             }
             if (elements.totalConcluidos) {
-                elements.totalConcluidos.textContent = Number(kpis.total_concluidos || 0).toLocaleString();
+                elements.totalConcluidos.textContent = this.formatNumber(kpis.total_concluidos);
             }
             if (elements.taxaConclusao) {
-                const taxa = Number(kpis.taxa_conclusao || 0);
-                elements.taxaConclusao.textContent = `${taxa.toFixed(1)}%`;
+                elements.taxaConclusao.textContent = `${this.formatNumber(kpis.taxa_conclusao, 1)}%`;
             }
         } catch (error) {
             console.error('Erro ao atualizar KPIs:', error);
@@ -93,25 +97,33 @@ class DashboardManager {
 
     updateTimestamp(timestamp) {
         const element = document.getElementById('lastUpdate');
-        if (element && timestamp) {
-            try {
-                // Converte timestamp para data local considerando timezone do Brasil
-                const date = new Date(timestamp);
-                const options = {
-                    timeZone: this.timezone,
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false
-                };
-                element.textContent = new Intl.DateTimeFormat('pt-BR', options).format(date);
-            } catch (error) {
-                console.error('Erro ao formatar timestamp:', error);
-                element.textContent = 'Data inválida';
+        if (!element || !timestamp) return;
+
+        try {
+            const formattedDate = DateUtils.formatDateTime(timestamp);
+            if (!formattedDate) {
+                throw new Error('Falha ao formatar data');
             }
+            element.textContent = formattedDate;
+        } catch (error) {
+            console.error('Erro ao atualizar timestamp:', error);
+            element.textContent = 'Data indisponível';
+        }
+    }
+
+    formatNumber(value, decimals = 0) {
+        if (value === null || value === undefined || isNaN(value)) {
+            return '0';
+        }
+
+        try {
+            return Number(value).toLocaleString('pt-BR', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        } catch (error) {
+            console.error('Erro ao formatar número:', error);
+            return '0';
         }
     }
 
@@ -128,5 +140,83 @@ class DashboardManager {
                 errorAlert.classList.add('d-none');
             }, 5000);
         }
+    }
+
+    applyFilters(filters) {
+        if (!filters || typeof filters !== 'object') {
+            console.warn('Filtros inválidos:', filters);
+            return;
+        }
+
+        try {
+            if (!this.dataManager?.data?.registros) {
+                console.warn('Dados não disponíveis para filtrar');
+                return;
+            }
+
+            const filteredData = this.dataManager.data.registros.filter(registro => {
+                return Object.entries(filters).every(([key, value]) => {
+                    if (!value || (Array.isArray(value) && value.length === 0)) {
+                        return true;
+                    }
+
+                    if (key === 'period') {
+                        if (!registro.data_hora || !value.start || !value.end) {
+                            return true;
+                        }
+
+                        try {
+                            const registroDate = DateUtils.formatTimestamp(registro.data_hora);
+                            const startDate = DateUtils.getDateWithMinTime(value.start).getTime();
+                            const endDate = DateUtils.getDateWithMaxTime(value.end).getTime();
+
+                            return registroDate >= startDate && registroDate <= endDate;
+                        } catch (error) {
+                            console.error('Erro ao filtrar por período:', error);
+                            return true;
+                        }
+                    }
+
+                    const fieldValue = this.getFieldValue(registro, key);
+                    return Array.isArray(value) ? 
+                        value.includes(fieldValue) : 
+                        fieldValue === value;
+                });
+            });
+
+            const updatedData = {
+                ...this.dataManager.data,
+                registros: filteredData,
+                ultima_atualizacao: DateUtils.getCurrentTime().getTime()
+            };
+
+            console.debug('Dados filtrados:', {
+                antes: this.dataManager.data.registros.length,
+                depois: filteredData.length,
+                filtros: filters
+            });
+
+            this.updateDashboard(updatedData);
+
+        } catch (error) {
+            console.error('Erro ao aplicar filtros:', error);
+            this.showError('Erro ao aplicar filtros');
+        }
+    }
+
+    getFieldValue(registro, key) {
+        const fieldMappings = {
+            'status': 'status_atendimento',
+            'tipo': 'tipo_atendimento',
+            'funcionario': 'funcionario',
+            'cliente': 'cliente',
+            'sistema': 'sistema',
+            'canal': 'canal_atendimento',
+            'relato': 'solicitacao_cliente',
+            'solicitacao': 'tipo_atendimento'
+        };
+
+        const fieldName = fieldMappings[key] || key;
+        return registro[fieldName] || '';
     }
 }

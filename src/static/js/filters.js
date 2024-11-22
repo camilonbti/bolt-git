@@ -1,7 +1,6 @@
 class FilterManager {
     constructor() {
         console.info('Inicializando FilterManager');
-        this.timezone = 'America/Sao_Paulo';
         this.filters = new Map();
         this.filterContainer = document.getElementById('activeFilters');
         
@@ -33,22 +32,27 @@ class FilterManager {
         const startDate = document.getElementById('startDate');
         const endDate = document.getElementById('endDate');
 
-        if (startDate && endDate && startDate.value && endDate.value) {
-            if (this.validateDates(startDate.value, endDate.value)) {
-                this.toggleFilter('period', {
-                    start: startDate.value,
-                    end: endDate.value
-                });
-            }
+        if (!startDate || !endDate || !startDate.value || !endDate.value) {
+            return;
         }
-    }
 
-    getDateWithMinTime(dateStr) {
-        return `${dateStr}T00:00:00.000-03:00`;
-    }
+        try {
+            const start = DateUtils.getDateWithMinTime(startDate.value);
+            const end = DateUtils.getDateWithMaxTime(endDate.value);
 
-    getDateWithMaxTime(dateStr) {
-        return `${dateStr}T23:59:59.999-03:00`;
+            if (start > end) {
+                this.showError('Data inicial não pode ser maior que a data final');
+                return;
+            }
+
+            this.toggleFilter('period', {
+                start: start.toISOString(),
+                end: end.toISOString()
+            });
+        } catch (error) {
+            console.error('Erro ao processar datas:', error);
+            this.showError('Erro ao processar datas');
+        }
     }
 
     initializeDateFields() {
@@ -68,8 +72,8 @@ class FilterManager {
             endDateInput.value = this.formatDateForInput(now);
             
             this.toggleFilter('period', {
-                start: startDateInput.value,
-                end: endDateInput.value
+                start: DateUtils.getDateWithMinTime(startDateInput.value).toISOString(),
+                end: DateUtils.getDateWithMaxTime(endDateInput.value).toISOString()
             });
             
             console.debug('Campos de data inicializados:', {
@@ -83,8 +87,7 @@ class FilterManager {
 
     formatDateForInput(date) {
         try {
-            const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-            return localDate.toISOString().split('T')[0];
+            return date.toISOString().split('T')[0];
         } catch (error) {
             console.error('Erro ao formatar data para input:', error);
             return '';
@@ -94,35 +97,10 @@ class FilterManager {
     formatDateForDisplay(dateStr) {
         try {
             const date = new Date(dateStr);
-            return date.toLocaleDateString('pt-BR', {
-                timeZone: this.timezone
-            });
+            return date.toLocaleDateString('pt-BR');
         } catch (error) {
             console.error('Erro ao formatar data para exibição:', error);
             return dateStr;
-        }
-    }
-
-    validateDates(startDate, endDate) {
-        try {
-            const start = new Date(this.getDateWithMinTime(startDate));
-            const end = new Date(this.getDateWithMaxTime(endDate));
-            const today = new Date();
-            
-            if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-                this.showError('Data inválida');
-                return false;
-            }
-
-            if (start > end) {
-                this.showError('Data inicial não pode ser maior que a data final');
-                return false;
-            }
-
-            return true;
-        } catch (error) {
-            console.error('Erro ao validar datas:', error);
-            return false;
         }
     }
 
@@ -131,10 +109,7 @@ class FilterManager {
 
         if (type === 'period') {
             if (value && value.start && value.end) {
-                this.filters.set(type, {
-                    start: this.getDateWithMinTime(value.start),
-                    end: this.getDateWithMaxTime(value.end)
-                });
+                this.filters.set(type, value);
             } else {
                 this.filters.delete(type);
             }
@@ -256,7 +231,7 @@ class FilterManager {
         return labels[type] || type;
     }
 
-    notifyFilterChange() {
+    getActiveFilters() {
         const activeFilters = {};
         this.filters.forEach((values, type) => {
             if (type === 'period') {
@@ -265,13 +240,17 @@ class FilterManager {
                 activeFilters[type] = Array.from(values);
             }
         });
+        return activeFilters;
+    }
 
+    notifyFilterChange() {
         document.dispatchEvent(new CustomEvent('filterChange', {
-            detail: activeFilters
+            detail: this.getActiveFilters()
         }));
     }
 
     showError(message) {
+        console.error(message);
         const errorAlert = document.getElementById('updateError');
         if (errorAlert) {
             const errorMessage = errorAlert.querySelector('.error-message');

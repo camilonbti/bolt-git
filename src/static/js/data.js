@@ -1,7 +1,6 @@
 class DashboardDataManager {
     constructor() {
         console.info('Inicializando DashboardDataManager');
-        this.timezone = 'America/Sao_Paulo';
         this.data = {
             registros: [],
             kpis: {
@@ -20,11 +19,10 @@ class DashboardDataManager {
                 relato: { labels: [], values: [] },
                 solicitacao: { labels: [], values: [] }
             },
-            ultima_atualizacao: this.formatDateTime(new Date())
+            ultima_atualizacao: DateUtils.getCurrentTime()
         };
         
         this.setupEventListeners();
-        this.loadInitialData();
     }
 
     setupEventListeners() {
@@ -33,7 +31,7 @@ class DashboardDataManager {
         document.addEventListener('filterChange', (event) => {
             console.info('Evento de mudança de filtro recebido:', {
                 filtros: event.detail,
-                timestamp: this.formatDateTime(new Date())
+                timestamp: DateUtils.formatDateTime(new Date())
             });
             this.applyFilters(event.detail);
         });
@@ -57,10 +55,16 @@ class DashboardDataManager {
                 throw new Error('Dados inválidos recebidos do servidor');
             }
 
+            // Processa timestamps
+            data.registros = data.registros.map(registro => ({
+                ...registro,
+                data_hora: DateUtils.formatTimestamp(registro.data_hora)
+            }));
+
             this.data = data;
             console.info('Dados iniciais carregados:', {
                 registros: data.registros.length,
-                timestamp: this.formatDateTime(new Date())
+                timestamp: DateUtils.formatDateTime(new Date())
             });
 
             document.dispatchEvent(new CustomEvent('dashboardUpdate', { 
@@ -70,10 +74,13 @@ class DashboardDataManager {
             if (loadingState) loadingState.classList.add('d-none');
             if (dashboardContent) dashboardContent.classList.remove('d-none');
 
+            return this.data;
+
         } catch (error) {
             console.error('Erro ao carregar dados iniciais:', error);
             if (loadingState) loadingState.classList.add('d-none');
             this.showError('Erro ao carregar dados iniciais');
+            throw error;
         }
     }
 
@@ -92,7 +99,7 @@ class DashboardDataManager {
                 registros: filteredRegistros,
                 kpis: this.#calcularKPIs(filteredRegistros),
                 graficos: this.#calcularGraficos(filteredRegistros),
-                ultima_atualizacao: this.formatDateTime(new Date())
+                ultima_atualizacao: DateUtils.getCurrentTime()
             };
 
             console.info('Dados filtrados:', {
@@ -138,9 +145,9 @@ class DashboardDataManager {
         }
 
         try {
-            const registroTimestamp = new Date(registro.data_hora).getTime();
-            const startTimestamp = new Date(period.start).getTime();
-            const endTimestamp = new Date(period.end).getTime();
+            const registroTimestamp = DateUtils.formatTimestamp(registro.data_hora);
+            const startTimestamp = DateUtils.getDateWithMinTime(period.start).getTime();
+            const endTimestamp = DateUtils.getDateWithMaxTime(period.end).getTime();
 
             return registroTimestamp >= startTimestamp && registroTimestamp <= endTimestamp;
         } catch (error) {
@@ -164,26 +171,16 @@ class DashboardDataManager {
         return registro[mapeamento[tipo] || tipo] || '';
     }
 
-    formatDateTime(date) {
-        return date.toLocaleString('pt-BR', {
-            timeZone: this.timezone,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-    }
-
     #calcularKPIs(registros) {
         const total = registros.length;
         const pendentes = registros.filter(r => r.status_atendimento === 'Pendente').length;
-        const taxa_conclusao = total > 0 ? ((total - pendentes) / total * 100) : 0;
+        const concluidos = registros.filter(r => r.status_atendimento === 'Concluído').length;
+        const taxa_conclusao = total > 0 ? ((concluidos / total) * 100) : 0;
         
         return {
             total_registros: total,
             total_pendentes: pendentes,
+            total_concluidos: concluidos,
             taxa_conclusao: taxa_conclusao.toFixed(1)
         };
     }
@@ -237,9 +234,16 @@ class DashboardDataManager {
             return;
         }
 
+        // Processa timestamps dos novos dados
+        newData.registros = newData.registros.map(registro => ({
+            ...registro,
+            data_hora: DateUtils.formatTimestamp(registro.data_hora)
+        }));
+
         console.info('Atualizando dados do dashboard:', {
             dadosAntigos: this.data.registros.length,
-            dadosNovos: newData.registros.length
+            dadosNovos: newData.registros.length,
+            timestamp: DateUtils.formatDateTime(new Date())
         });
         
         this.data = newData;

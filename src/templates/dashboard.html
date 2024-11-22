@@ -95,22 +95,124 @@
                 <div class="col-md-6">
                     <div class="chart-card">
                         <h5>Status dos Atendimentos</h5>
-                        <div class="chart-container-father">
-                            <div class="chart-container">
-                                <canvas id="statusChart"></canvas>
-                            </div>
+                        <div class="chart-container">
+                            <canvas id="statusChart"></canvas>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Tipos de Atendimento -->
                 <div class="col-md-6">
+                    <div class="
+                    <!DOCTYPE html>
+                    <html lang="pt-BR">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Dashboard de Atendimentos</title>
+                        
+                        <!-- CSS -->
+                        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+                        <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+                        <link href="{{ url_for('static', filename='css/table.css') }}" rel="stylesheet">
+                        <link href="{{ url_for('static', filename='css/charts.css') }}" rel="stylesheet">
+                        <link href="{{ url_for('static', filename='css/filters.css') }}" rel="stylesheet">
+                    </head>
+                    <body>
+                        <div class="container-fluid py-4">
+                            <!-- Header -->
+                            <header class="mb-4 d-flex justify-content-between align-items-center">
+                                <h1 class="h3 mb-0">Dashboard de Atendimentos</h1>
+                                <div class="d-flex align-items-center gap-3">
+                                    <small class="text-muted">
+                                        Última atualização: <span id="lastUpdate">-</span>
+                                    </small>
+                                    <button id="refreshBtn" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-sync-alt"></i> Atualizar
+                                    </button>
+                                </div>
+                            </header>
+                    
+                            <!-- Loading State -->
+                            <div id="loadingState" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Carregando...</span>
+                                </div>
+                                <p class="mt-2">Carregando dados...</p>
+                            </div>
+                    
+                            <!-- Dashboard Content (initially hidden) -->
+                            <div id="dashboardContent" class="d-none">
+                                <!-- Alerts -->
+                                <div id="updateSuccess" class="alert alert-success d-none" role="alert">
+                                    Dados atualizados com sucesso!
+                                </div>
+                                <div id="updateError" class="alert alert-danger d-none" role="alert">
+                                    <span class="error-message">Erro ao atualizar dados</span>
+                                </div>
+                    
+                                <!-- Seção de Filtros -->
+                                <section class="filters-section">
+                                    <div class="filters-header">
+                                        <div class="period-filter">
+                                            <label>Período:</label>
+                                            <input type="date" id="startDate" name="startDate" class="form-control form-control-sm">
+                                            <label>até</label>
+                                            <input type="date" id="endDate" name="endDate" class="form-control form-control-sm">
+                                        </div>
+                                    </div>
+                                    <div class="active-filters" id="activeFilters">
+                                        <div class="no-filters">Nenhum filtro aplicado</div>
+                                    </div>
+                                </section>
+                    
+                                <!-- KPIs -->
+                                <div class="row g-4 mb-4">
+                                    <div class="col-md-3">
+                                        <div class="kpi-card">
+                                            <h6>Total de Atendimentos</h6>
+                                            <p id="totalAtendimentos">0</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="kpi-card">
+                                            <h6>Atendimentos Pendentes</h6>
+                                            <p id="totalPendentes">0</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="kpi-card">
+                                            <h6>Atendimentos Concluídos</h6>
+                                            <p id="totalConcluidos">0</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="kpi-card">
+                                            <h6>Taxa de Conclusão</h6>
+                                            <p id="taxaConclusao">0%</p>
+                                        </div>
+                                    </div>
+                                </div>
+                    
+                                <!-- Gráficos -->
+                                <div class="row g-4 mb-4">
+                                    <!-- Status dos Atendimentos -->
+                                    <div class="col-md-6">
+                                        <div class="chart-card">
+                                            <h5>Status dos Atendimentos</h5>
+                                            <div class="chart-container">
+                                                <canvas id="statusChart"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                <!-- Tipos de Atendimento -->
+                <div class="col-md-6">
                     <div class="chart-card">
                         <h5>Tipos de Atendimento</h5>
-                        <div class="chart-container-father">
-                            <div class="chart-container">
-                                <canvas id="tipoChart"></canvas>
-                            </div>
+                        <div class="chart-container">
+                            <canvas id="tipoChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -119,10 +221,8 @@
                 <div class="col-md-6">
                     <div class="chart-card">
                         <h5>Atendimentos por Funcionário</h5>
-                        <div class="chart-container-father">
-                            <div class="chart-container">
-                                <canvas id="funcionarioChart"></canvas>
-                            </div>
+                        <div class="chart-container">
+                            <canvas id="funcionarioChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -131,10 +231,8 @@
                 <div class="col-md-6">
                     <div class="chart-card">
                         <h5>Atendimentos por Cliente</h5>
-                        <div class="chart-container-father">
-                            <div class="chart-container">
-                                <canvas id="clienteChart"></canvas>
-                            </div>
+                        <div class="chart-container">
+                            <canvas id="clienteChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -143,10 +241,8 @@
                 <div class="col-md-6">
                     <div class="chart-card">
                         <h5>Sistemas</h5>
-                        <div class="chart-container-father">
-                            <div class="chart-container">
-                                <canvas id="sistemaChart"></canvas>
-                            </div>
+                        <div class="chart-container">
+                            <canvas id="sistemaChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -155,10 +251,8 @@
                 <div class="col-md-6">
                     <div class="chart-card">
                         <h5>Canais de Atendimento</h5>
-                        <div class="chart-container-father">
-                            <div class="chart-container">
-                                <canvas id="canalChart"></canvas>
-                            </div>
+                        <div class="chart-container">
+                            <canvas id="canalChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -167,10 +261,8 @@
                 <div class="col-md-6">
                     <div class="chart-card">
                         <h5>Relatos de Atendimento</h5>
-                        <div class="chart-container-father">
-                            <div class="chart-container">
-                                <canvas id="relatoChart"></canvas>
-                            </div>
+                        <div class="chart-container">
+                            <canvas id="relatoChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -179,10 +271,8 @@
                 <div class="col-md-6">
                     <div class="chart-card">
                         <h5>Tipos de Solicitação</h5>
-                        <div class="chart-container-father">
-                            <div class="chart-container">
-                                <canvas id="solicitacaoChart"></canvas>
-                            </div>
+                        <div class="chart-container">
+                            <canvas id="solicitacaoChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -220,10 +310,10 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Scripts da aplicação -->
+    <script src="{{ url_for('static', filename='js/date_utils.js') }}"></script>
     <script src="{{ url_for('static', filename='js/color-palette.js') }}"></script>
     <script src="{{ url_for('static', filename='js/data.js') }}"></script>
     <script src="{{ url_for('static', filename='js/table.js') }}"></script>
@@ -247,3 +337,5 @@
     </script>
 </body>
 </html>
+
+                    
