@@ -4,6 +4,7 @@ class ChartManager {
         this.charts = {};
         this.colorPalette = new ColorPaletteManager();
         this.initialData = initialData || {};
+        Chart.register(ChartDataLabels); // Registra o plugin globalmente
         this.initCharts();
         this.setupEventListeners();
     }
@@ -26,143 +27,180 @@ class ChartManager {
         const commonOptions = {
             responsive: true,
             maintainAspectRatio: false,
+            indexAxis: 'y',
             plugins: {
                 legend: {
-                    position: 'bottom',
-                    labels: {
-                        boxWidth: 12,
-                        padding: 15,
-                        font: { size: 11 }
-                    }
+                    display: false
                 },
                 tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleFont: {
+                        size: 13
+                    },
+                    bodyFont: {
+                        size: 12
+                    },
+                    padding: 10,
+                    cornerRadius: 4,
                     callbacks: {
                         label: (context) => {
                             const value = context.raw;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const percentage = ((value / total) * 100).toFixed(1);
-                            return `${context.label}: ${value} (${percentage}%)`;
+                            return `${value} (${percentage}%)`;
                         }
                     }
+                },
+                datalabels: {
+                    color: '#666',
+                    font: {
+                        weight: '500',
+                        size: 11
+                    },
+                    anchor: 'end',
+                    align: 'right',
+                    offset: 4,
+                    formatter: (value, context) => {
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return `${value} (${percentage}%)`;
+                    }
                 }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        },
+                        color: '#666'
+                    }
+                },
+                y: {
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11,
+                            weight: '500'
+                        },
+                        color: '#444',
+                        padding: 8
+                    }
+                }
+            },
+            layout: {
+                padding: {
+                    left: 10,
+                    right: 25,
+                    top: 15,
+                    bottom: 15
+                }
+            },
+            animation: {
+                duration: 500,
+                easing: 'easeOutQuart'
             }
         };
 
-        // Status (Doughnut)
-        this.createChart('status', 'doughnut', {
-            ...commonOptions,
-            cutout: '60%',
-            plugins: {
-                ...commonOptions.plugins,
-                legend: {
-                    ...commonOptions.plugins.legend,
-                    position: 'right'
-                }
-            }
-        }, this.colorPalette.getStatusColors(), this.initialData.status);
+        // Todos os gráficos como barras horizontais
+        const allCharts = [
+            'status',
+            'tipo',
+            'funcionario',
+            'cliente',
+            'sistema',
+            'canal',
+            'relato',
+            'solicitacao'
+        ];
 
-        // Tipo de Atendimento (Bar horizontal)
-        this.createChart('tipo', 'bar', {
-            ...commonOptions,
-            indexAxis: 'y',
-            scales: {
-                x: { 
-                    beginAtZero: true,
-                    grid: { display: false }
-                },
-                y: {
-                    grid: { display: false }
-                }
+        allCharts.forEach(type => {
+            const options = {...commonOptions};
+            
+            // Configurações específicas para cada tipo de gráfico
+            if (type === 'status') {
+                options.plugins.datalabels.color = '#fff';
+                options.plugins.datalabels.font.weight = 'bold';
             }
-        }, null, this.initialData.tipo);
 
-        // Funcionário (Bar)
-        this.createChart('funcionario', 'bar', {
-            ...commonOptions,
-            scales: {
-                y: { 
-                    beginAtZero: true,
-                    grid: { display: false }
-                },
-                x: {
-                    grid: { display: false }
-                }
-            }
-        }, null, this.initialData.funcionario);
+            // Configurações de hover e interatividade
+            options.hover = {
+                mode: 'nearest',
+                intersect: false,
+                animationDuration: 150
+            };
 
-        // Cliente (Bar horizontal)
-        this.createChart('cliente', 'bar', {
-            ...commonOptions,
-            indexAxis: 'y',
-            scales: {
-                x: { 
-                    beginAtZero: true,
-                    grid: { display: false }
-                },
-                y: {
-                    grid: { display: false }
+            // Configurações de barra
+            options.datasets = {
+                bar: {
+                    borderWidth: 0,
+                    borderRadius: 4,
+                    barPercentage: 0.8,
+                    categoryPercentage: 0.9
                 }
-            }
-        }, null, this.initialData.cliente);
-
-        // Sistema (Pie)
-        this.createChart('sistema', 'pie', {
-            ...commonOptions,
-            plugins: {
-                ...commonOptions.plugins,
-                legend: {
-                    ...commonOptions.plugins.legend,
-                    position: 'right'
-                }
-            }
-        }, null, this.initialData.sistema);
-
-        // Canal (Bar)
-        this.createChart('canal', 'bar', {
-            ...commonOptions,
-            scales: {
-                y: { 
-                    beginAtZero: true,
-                    grid: { display: false }
-                },
-                x: {
-                    grid: { display: false }
-                }
-            }
-        }, null, this.initialData.canal);
-
-        // Relato (Bar horizontal)
-        this.createChart('relato', 'bar', {
-            ...commonOptions,
-            indexAxis: 'y',
-            scales: {
-                x: { 
-                    beginAtZero: true,
-                    grid: { display: false }
-                },
-                y: {
-                    grid: { display: false }
-                }
-            }
-        }, null, this.initialData.relato);
-
-        // Solicitação (Bar horizontal)
-        this.createChart('solicitacao', 'bar', {
-            ...commonOptions,
-            indexAxis: 'y',
-            scales: {
-                x: { 
-                    beginAtZero: true,
-                    grid: { display: false }
-                },
-                y: {
-                    grid: { display: false }
-                }
-            }
-        }, null, this.initialData.solicitacao);
+            };
+            
+            this.createChart(type, 'bar', options);
+        });
     }
 
-    createChart(type, chartType, options, customColors = null, chartData = null) {
+    calculateChartDimensions(dataLength) {
+        const containerHeight = 300;
+        const maxBarsWithoutScroll = 9;
+        const minBarHeight = 30;
+        const maxBarHeight = 50;
+        const paddingTop = 20;
+        const paddingBottom = 40;
+        const availableHeight = containerHeight - (paddingTop + paddingBottom);
+
+        if (dataLength === 0) {
+            return {
+                totalHeight: containerHeight,
+                needsScroll: false,
+                contentHeight: 0,
+                barHeight: maxBarHeight,
+                barPercentage: 0.8,
+                categoryPercentage: 0.9
+            };
+        }
+
+        if (dataLength <= maxBarsWithoutScroll) {
+            const optimalBarHeight = Math.min(maxBarHeight, availableHeight / dataLength);
+            const totalContentHeight = dataLength * optimalBarHeight;
+            
+            // Ajusta a proporção das barras baseado na quantidade
+            const barPercentage = Math.max(0.6, Math.min(0.8, 1 - (dataLength / maxBarsWithoutScroll) * 0.2));
+            
+            return {
+                totalHeight: containerHeight,
+                needsScroll: false,
+                contentHeight: totalContentHeight,
+                barHeight: optimalBarHeight,
+                barPercentage: barPercentage,
+                categoryPercentage: 0.9
+            };
+        }
+
+        const totalContentHeight = dataLength * minBarHeight;
+        return {
+            totalHeight: Math.max(containerHeight, totalContentHeight + paddingTop + paddingBottom),
+            needsScroll: true,
+            contentHeight: totalContentHeight,
+            barHeight: minBarHeight,
+            barPercentage: 0.6,
+            categoryPercentage: 0.9
+        };
+    }
+
+    createChart(type, chartType, options) {
         const elementId = `${type}Chart`;
         const canvas = document.getElementById(elementId);
         
@@ -172,23 +210,16 @@ class ChartManager {
         }
     
         const ctx = canvas.getContext('2d');
-        const data = chartData || { labels: [], values: [] };
+        const data = this.initialData[type] || { labels: [], values: [] };
         const dataLength = data.labels.length;
-        const colors = customColors || this.colorPalette.getChartColors(dataLength);
-        var chartHeight = 300;
-    
-        // Calcular altura para gráficos de barra horizontal
-        if (chartType === 'bar' && options.indexAxis === 'y') {
-            const heightPerItem = 25; // altura por item
-            const minHeight = 300; // altura mínima
-            const calculatedHeight = Math.max(minHeight, dataLength * heightPerItem);
-            
-            // Definir altura diretamente nas opções do Chart
-            if(calculatedHeight > chartHeight){
-                chartHeight = calculatedHeight;
-    
-                canvas.style.height = chartHeight+'px';
-            }
+        const colors = type === 'status' ? 
+            data.labels.map(label => this.colorPalette.getStatusColor(label)) :
+            this.colorPalette.getChartColors(dataLength);
+        
+        const dimensions = this.calculateChartDimensions(dataLength);
+        
+        if (dimensions.needsScroll) {
+            canvas.style.height = `${dimensions.totalHeight}px`;
         }
     
         const chart = new Chart(ctx, {
@@ -198,27 +229,22 @@ class ChartManager {
                 datasets: [{
                     data: data.values,
                     backgroundColor: colors,
-                    borderWidth: 1,
-                    borderColor: colors.map(color => this.colorPalette.adjustOpacity(color, 0.8)),
-                    barThickness: 20
+                    borderWidth: 0,
+                    borderRadius: 4,
+                    barPercentage: dimensions.barPercentage,
+                    categoryPercentage: dimensions.categoryPercentage
                 }]
             },
             options: {
                 ...options,
-                // maintainAspectRatio: false, // Importante para respeitar a altura definida
-                // responsive: true,
-                height: chartHeight,
+                maintainAspectRatio: false,
+                responsive: true,
                 onClick: (event, elements) => {
                     if (elements.length > 0) {
                         const index = elements[0].index;
-                        const value = this.charts[type].data.labels[index];
-                        console.debug(`Clique no gráfico ${type}:`, value);
-                        
+                        const value = chart.data.labels[index];
                         document.dispatchEvent(new CustomEvent('chartClick', {
-                            detail: {
-                                type: type,
-                                value: value
-                            }
+                            detail: { type, value }
                         }));
                     }
                 }
@@ -230,8 +256,6 @@ class ChartManager {
     }
     
     updateCharts(data) {
-        console.debug('Atualizando gráficos com dados:', data);
-        
         if (!data) {
             console.error('Dados inválidos para atualização dos gráficos');
             return;
@@ -246,19 +270,31 @@ class ChartManager {
 
             const activeFilters = window.filterManager?.getActiveFilters() || {};
             const dataLength = chartData.labels.length;
-            const colors = type === 'status' ? 
-                this.colorPalette.getStatusColors() : 
-                this.colorPalette.getChartColors(dataLength);
+            const dimensions = this.calculateChartDimensions(dataLength);
             
             chart.data.labels = chartData.labels;
             chart.data.datasets[0].data = chartData.values;
             
             chart.data.datasets[0].backgroundColor = chartData.labels.map((label, index) => {
-                const baseColor = colors[index % colors.length];
+                const baseColor = type === 'status' ? 
+                    this.colorPalette.getStatusColor(label) :
+                    this.colorPalette.getChartColors(dataLength)[index];
+                    
                 return activeFilters[type]?.includes(label) ?
                     this.colorPalette.adjustOpacity(baseColor, 0.8) :
                     baseColor;
             });
+
+            // Atualiza as proporções das barras
+            chart.data.datasets[0].barPercentage = dimensions.barPercentage;
+            chart.data.datasets[0].categoryPercentage = dimensions.categoryPercentage;
+            
+            const canvas = chart.canvas;
+            if (dimensions.needsScroll) {
+                canvas.style.height = `${dimensions.totalHeight}px`;
+            } else {
+                canvas.style.height = '300px';
+            }
             
             chart.update('none');
         });
@@ -267,9 +303,15 @@ class ChartManager {
     resizeCharts() {
         Object.values(this.charts).forEach(chart => {
             if (chart) {
+                const dataLength = chart.data.labels.length;
+                const dimensions = this.calculateChartDimensions(dataLength);
+                
+                if (dimensions.needsScroll) {
+                    chart.canvas.style.height = `${dimensions.totalHeight}px`;
+                }
+                
                 chart.resize();
             }
         });
     }
 }
-

@@ -8,9 +8,11 @@ import logging
 from datetime import datetime
 from ..config.campos_config import (
     CAMPOS_CONFIGURACAO,
+    STATUS_PERMITIDOS,
     get_mapeamento_colunas,
     get_valores_default,
-    get_campos_filtraveis
+    get_campos_filtraveis,
+    get_campo_config
 )
 from ..utils.date_utils import (
     TIMEZONE,
@@ -40,36 +42,23 @@ class ProcessadorDados:
                 logger.warning("Dados brutos vazios ou insuficientes")
                 return self._get_estrutura_vazia()
 
-            # Debug: Mostrar primeiras linhas dos dados brutos
-            logger.debug("Primeiras 5 linhas dos dados brutos:")
-            for i, linha in enumerate(dados_brutos[1:6]):
-                if len(linha) > 0:
-                    logger.debug(f"Linha {i+1} - data_hora bruto: {linha[0]}")
-
-            # Cria DataFrame inicial
-            df = pd.DataFrame(dados_brutos[1:], columns=dados_brutos[0])
-            df = df.rename(columns=self.mapeamento_colunas)
+            # Obtém apenas as colunas que estão no mapeamento
+            colunas_mapeadas = [col for col in dados_brutos[0] if col in self.mapeamento_colunas]
+            dados_filtrados = []
             
-            # Debug: Mostrar dados do campo data_hora após criar DataFrame
-            if 'data_hora' in df.columns:
-                logger.debug("Valores de data_hora após criar DataFrame:")
-                logger.debug(df['data_hora'].head().to_list())
+            # Filtra os dados para incluir apenas as colunas mapeadas
+            for linha in dados_brutos[1:]:
+                dados_filtrados.append([valor for col, valor in zip(dados_brutos[0], linha) if col in self.mapeamento_colunas])
+
+            # Cria DataFrame com as colunas mapeadas
+            df = pd.DataFrame(dados_filtrados, columns=colunas_mapeadas)
+            df = df.rename(columns=self.mapeamento_colunas)
 
             # Aplica valores default e validações para cada campo
             df = self._processar_campos(df)
             
-            # Debug: Mostrar dados após processar campos
-            if 'data_hora' in df.columns:
-                logger.debug("Valores de data_hora após processar campos:")
-                logger.debug(df['data_hora'].head().to_list())
-
             # Processa datas com tratamento de erro específico
             df = self._processar_datas(df)
-            
-            # Debug: Mostrar dados após processar datas
-            if 'data_hora' in df.columns:
-                logger.debug("Valores de data_hora após processar datas:")
-                logger.debug(df['data_hora'].head().to_list())
 
             resultado = {
                 'kpis': self._calcular_kpis(df),
@@ -77,11 +66,6 @@ class ProcessadorDados:
                 'registros': df.to_dict('records'),
                 'ultima_atualizacao': format_timestamp(get_current_time())
             }
-            
-            # Debug: Mostrar amostra dos registros finais
-            logger.debug("Amostra dos registros finais:")
-            for i, registro in enumerate(resultado['registros'][:5]):
-                logger.debug(f"Registro {i+1} - data_hora: {registro.get('data_hora')}")
 
             logger.info(f"Dados processados: {len(resultado['registros'])} registros")
             return resultado
@@ -94,18 +78,18 @@ class ProcessadorDados:
         """Processa todos os campos aplicando valores default e validações."""
         try:
             df_processado = df.copy()
-            for campo, config in self.config.items():
+            campos_ordenados = sorted(
+                self.config.items(), 
+                key=lambda x: x[1].get('ordem', 999)
+            )
+            
+            for campo, config in campos_ordenados:
                 nome_interno = config["nome_interno"]
                 
                 # Cria coluna se não existir
                 if nome_interno not in df_processado.columns:
                     df_processado[nome_interno] = config["valor_default"]
                     continue
-                
-                # Debug: Mostrar valores antes de processar se for data_hora
-                if nome_interno == 'data_hora':
-                    logger.debug(f"Valores de {nome_interno} antes de processar:")
-                    logger.debug(df_processado[nome_interno].head().to_list())
                 
                 # Aplica valor default para valores nulos
                 df_processado[nome_interno] = df_processado[nome_interno].fillna(config["valor_default"])
@@ -119,11 +103,6 @@ class ProcessadorDados:
                 if "valores_permitidos" in config:
                     invalidos = ~df_processado[nome_interno].isin(config["valores_permitidos"])
                     df_processado.loc[invalidos, nome_interno] = config["valor_default"]
-                
-                # Debug: Mostrar valores após processar se for data_hora
-                if nome_interno == 'data_hora':
-                    logger.debug(f"Valores de {nome_interno} após processar:")
-                    logger.debug(df_processado[nome_interno].head().to_list())
             
             return df_processado
             
@@ -135,7 +114,7 @@ class ProcessadorDados:
         """Processa campos de data preservando a hora."""
         try:
             df_processado = df.copy()
-            data_config = self.config["Carimbo de data/hora"]
+            data_config = get_campo_config("Carimbo de data/hora")
             campo_data = data_config["nome_interno"]
             
             if campo_data not in df_processado.columns:
@@ -144,37 +123,20 @@ class ProcessadorDados:
             
             def converter_data(valor):
                 if pd.isna(valor) or valor == data_config["valor_default"]:
-                    logger.debug(f"Valor nulo ou default encontrado: {valor}")
                     return format_timestamp(get_current_time())
                 
                 try:
-                    # Debug do valor antes da conversão
-                    logger.debug(f"Convertendo valor: {valor} (tipo: {type(valor)})")
-                    
-                    # Tenta converter diretamente se for timestamp
                     if isinstance(valor, (int, float)):
-                        logger.debug(f"Valor numérico encontrado: {valor}")
                         return valor
                     
-                    # Se for string, tenta converter para timestamp
-                    data = datetime.strptime(str(valor).strip(), "%d/%m/%Y %H:%M:%S")
-                    timestamp = int(data.timestamp() * 1000)
-                    logger.debug(f"String '{valor}' convertida para timestamp: {timestamp}")
-                    return timestamp
+                    data = datetime.strptime(str(valor).strip(), data_config["formato"])
+                    return format_timestamp(data)
                     
                 except Exception as e:
                     logger.warning(f"Erro ao converter data '{valor}': {str(e)}")
                     return format_timestamp(get_current_time())
             
-            # Debug antes da conversão
-            logger.debug("Amostra de datas antes da conversão:")
-            logger.debug(df_processado[campo_data].head().to_list())
-            
             df_processado[campo_data] = df_processado[campo_data].apply(converter_data)
-            
-            # Debug após a conversão
-            logger.debug("Amostra de datas após conversão:")
-            logger.debug(df_processado[campo_data].head().to_list())
             
             return df_processado
             
@@ -220,17 +182,19 @@ class ProcessadorDados:
     def _gerar_dados_graficos(self, df: pd.DataFrame) -> Dict[str, Any]:
         """Gera dados para todos os gráficos do dashboard."""
         try:
-            graficos = {
-                'status': self._contar_por_coluna(df, 'status_atendimento'),
-                'tipo': self._contar_por_coluna(df, 'tipo_atendimento'),
-                'funcionario': self._contar_por_coluna(df, 'funcionario'),
-                'cliente': self._contar_por_coluna(df, 'cliente'),
-                'sistema': self._contar_por_coluna(df, 'sistema'),
-                'canal': self._contar_por_coluna(df, 'canal_atendimento'),
-                'timeline': self._gerar_timeline(df),
-                'relato': self._contar_por_coluna(df, 'solicitacao_cliente'),
-                'solicitacao': self._contar_por_coluna(df, 'tipo_atendimento')
-            }
+            campos_filtraveis = get_campos_filtraveis()
+            graficos = {}
+            
+            for campo, config in campos_filtraveis.items():
+                nome_interno = config["nome_interno"]
+                if nome_interno in df.columns:
+                    graficos[nome_interno.replace('_', '')] = self._contar_por_coluna(
+                        df, 
+                        nome_interno, 
+                        limite=10 if config.get('tipo_filtro') == 'select' else None
+                    )
+            
+            graficos['timeline'] = self._gerar_timeline(df)
             
             logger.debug("Dados dos gráficos gerados com sucesso")
             return graficos
@@ -239,7 +203,7 @@ class ProcessadorDados:
             logger.error(f"Erro ao gerar dados dos gráficos: {str(e)}")
             return self._get_graficos_vazios()
 
-    def _contar_por_coluna(self, df: pd.DataFrame, coluna: str) -> Dict[str, List]:
+    def _contar_por_coluna(self, df: pd.DataFrame, coluna: str, limite: int = None) -> Dict[str, List]:
         """Conta ocorrências em uma coluna."""
         try:
             if coluna not in df.columns:
@@ -247,6 +211,8 @@ class ProcessadorDados:
                 return {'labels': [], 'values': []}
                 
             contagem = df[coluna].value_counts()
+            if limite:
+                contagem = contagem.head(limite)
             return {
                 'labels': contagem.index.tolist(),
                 'values': contagem.values.tolist()
@@ -294,14 +260,11 @@ class ProcessadorDados:
 
     def _get_graficos_vazios(self) -> Dict[str, List]:
         """Retorna estrutura vazia de gráficos."""
-        return {
-            'status': {'labels': [], 'values': []},
-            'tipo': {'labels': [], 'values': []},
-            'funcionario': {'labels': [], 'values': []},
-            'cliente': {'labels': [], 'values': []},
-            'sistema': {'labels': [], 'values': []},
-            'canal': {'labels': [], 'values': []},
-            'timeline': {'labels': [], 'values': []},
-            'relato': {'labels': [], 'values': []},
-            'solicitacao': {'labels': [], 'values': []}
+        campos_filtraveis = get_campos_filtraveis()
+        graficos_vazios = {
+            nome_interno.replace('_', ''): {'labels': [], 'values': []}
+            for _, config in campos_filtraveis.items()
+            if config.get('permite_filtro', False)
         }
+        graficos_vazios['timeline'] = {'labels': [], 'values': []}
+        return graficos_vazios

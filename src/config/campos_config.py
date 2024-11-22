@@ -51,6 +51,9 @@ VALORES_DEFAULT = {
     'canal_atendimento': 'Não especificado'
 }
 
+# Status permitidos para atendimentos
+STATUS_PERMITIDOS = ["Concluído", "Pendente", "Cancelado", "Em Andamento"]
+
 # Configuração completa dos campos
 CAMPOS_CONFIGURACAO = {
     "Carimbo de data/hora": {
@@ -62,7 +65,8 @@ CAMPOS_CONFIGURACAO = {
         "permite_filtro": True,
         "tipo_filtro": "date",
         "label": "Data/Hora",
-        "visivel": True
+        "visivel": True,
+        "ordem": 1
     },
     "Prestador de Serviços:": {
         "nome_interno": "funcionario",
@@ -72,7 +76,8 @@ CAMPOS_CONFIGURACAO = {
         "permite_filtro": True,
         "tipo_filtro": "select",
         "label": "Funcionário",
-        "visivel": True
+        "visivel": True,
+        "ordem": 2
     },
     "Empresa atendida:": {
         "nome_interno": "cliente",
@@ -82,7 +87,8 @@ CAMPOS_CONFIGURACAO = {
         "permite_filtro": True,
         "tipo_filtro": "select",
         "label": "Cliente",
-        "visivel": True
+        "visivel": True,
+        "ordem": 3
     },
     "Nome do solicitante:": {
         "nome_interno": "solicitante",
@@ -92,7 +98,8 @@ CAMPOS_CONFIGURACAO = {
         "permite_filtro": True,
         "tipo_filtro": "select",
         "label": "Solicitante",
-        "visivel": True
+        "visivel": True,
+        "ordem": 4
     },
     "Relato do pedido de atendimento:": {
         "nome_interno": "solicitacao_cliente",
@@ -102,7 +109,8 @@ CAMPOS_CONFIGURACAO = {
         "permite_filtro": True,
         "tipo_filtro": "select",
         "label": "Relato",
-        "visivel": True
+        "visivel": True,
+        "ordem": 5
     },
     "Descrição do atendimento realizado:": {
         "nome_interno": "descricao_atendimento",
@@ -111,18 +119,20 @@ CAMPOS_CONFIGURACAO = {
         "valor_default": VALORES_DEFAULT['descricao_atendimento'],
         "permite_filtro": False,
         "label": "Descrição",
-        "visivel": True
+        "visivel": True,
+        "ordem": 6
     },
     "Status do atendimento:": {
         "nome_interno": "status_atendimento",
         "tipo": "string",
         "obrigatorio": True,
         "valor_default": VALORES_DEFAULT['status_atendimento'],
-        "valores_permitidos": ["Concluído", "Pendente", "Cancelado", "Em Andamento"],
+        "valores_permitidos": STATUS_PERMITIDOS,
         "permite_filtro": True,
         "tipo_filtro": "select",
         "label": "Status",
-        "visivel": True
+        "visivel": True,
+        "ordem": 7
     },
     "Tipo do atendimento solicitado:": {
         "nome_interno": "tipo_atendimento",
@@ -132,7 +142,8 @@ CAMPOS_CONFIGURACAO = {
         "permite_filtro": True,
         "tipo_filtro": "select",
         "label": "Tipo",
-        "visivel": True
+        "visivel": True,
+        "ordem": 8
     },
     "Sistema do cliente:": {
         "nome_interno": "sistema",
@@ -142,7 +153,8 @@ CAMPOS_CONFIGURACAO = {
         "permite_filtro": True,
         "tipo_filtro": "select",
         "label": "Sistema",
-        "visivel": True
+        "visivel": True,
+        "ordem": 9
     },
     "Qual(s) canal(s) utilizado(s) para realizar o atendimento? ": {
         "nome_interno": "canal_atendimento",
@@ -152,7 +164,8 @@ CAMPOS_CONFIGURACAO = {
         "permite_filtro": True,
         "tipo_filtro": "select",
         "label": "Canal",
-        "visivel": True
+        "visivel": True,
+        "ordem": 10
     }
 }
 
@@ -165,18 +178,20 @@ def get_valores_default() -> Dict[str, Any]:
     return VALORES_DEFAULT
 
 def get_campos_visiveis() -> Dict[str, Dict[str, Any]]:
-    """Retorna apenas os campos configurados como visíveis."""
-    return {
+    """Retorna apenas os campos configurados como visíveis, ordenados."""
+    campos_visiveis = {
         nome: config for nome, config in CAMPOS_CONFIGURACAO.items()
         if config.get('visivel', False)
     }
+    return dict(sorted(campos_visiveis.items(), key=lambda x: x[1].get('ordem', 999)))
 
 def get_campos_filtraveis() -> Dict[str, Dict[str, Any]]:
-    """Retorna apenas os campos que permitem filtro."""
-    return {
+    """Retorna apenas os campos que permitem filtro, ordenados."""
+    campos_filtraveis = {
         nome: config for nome, config in CAMPOS_CONFIGURACAO.items()
         if config.get('permite_filtro', False)
     }
+    return dict(sorted(campos_filtraveis.items(), key=lambda x: x[1].get('ordem', 999)))
 
 def validar_cabecalho(cabecalho: list) -> bool:
     """Valida se o cabeçalho da planilha corresponde à configuração."""
@@ -186,3 +201,7 @@ def validar_cabecalho(cabecalho: list) -> bool:
     }
     campos_planilha = set(cabecalho)
     return campos_obrigatorios.issubset(campos_planilha)
+
+def get_campo_config(nome_campo: str) -> Dict[str, Any]:
+    """Retorna a configuração de um campo específico."""
+    return CAMPOS_CONFIGURACAO.get(nome_campo, {})
