@@ -2,82 +2,119 @@ class DashboardManager {
     constructor() {
         console.info('Inicializando DashboardManager');
         this.timezone = 'America/Sao_Paulo';
-
-        // Garantir que applyFilters está vinculado ao contexto da classe
-        this.applyFilters = this.applyFilters.bind(this);
-
+        this.initialized = false;
         this.initializeComponents();
     }
 
     async initializeComponents() {
         try {
-            this.dataManager = new DashboardDataManager(); // Gerenciador de dados
+            // Inicializa gerenciador de dados primeiro
+            this.dataManager = new DashboardDataManager();
+            
+            // Aguarda o carregamento inicial dos dados
             const initialData = await this.dataManager.loadInitialData();
+            
             if (!initialData) {
                 throw new Error('Falha ao carregar dados iniciais');
             }
 
+            // Garante que o DOM está pronto antes de inicializar componentes visuais
+            await this.waitForDOM();
+            
+            // Inicializa componentes visuais
             this.chartManager = new ChartManager(initialData.graficos);
             this.tableManager = new TableManager();
             this.filterManager = new FilterManager();
             this.updater = new DashboardUpdater();
-
+            
+            // Configura listeners de eventos
             this.setupEventListeners();
-
+            
+            // Marca como inicializado
+            this.initialized = true;
+            
             console.debug('Componentes inicializados com sucesso');
+            
+            // Atualiza dashboard com dados iniciais
             this.updateDashboard(initialData);
+            
         } catch (error) {
             console.error('Erro ao inicializar componentes:', error);
             this.showError('Erro ao inicializar dashboard');
         }
     }
 
+    waitForDOM() {
+        return new Promise(resolve => {
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                resolve();
+            } else {
+                document.addEventListener('DOMContentLoaded', resolve);
+            }
+        });
+    }
+
     setupEventListeners() {
         document.addEventListener('dashboardUpdate', (event) => {
             console.debug('Evento de atualização recebido');
-            this.updateDashboard(event.detail);
+            if (event.detail) {
+                this.updateDashboard(event.detail);
+            }
         });
 
         document.addEventListener('filterChange', (event) => {
             console.debug('Evento de filtro recebido:', event.detail);
-            this.applyFilters(event.detail);
+            if (event.detail) {
+                this.applyFilters(event.detail);
+            }
         });
+
+        // Listener para botão de atualização
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', async () => {
+                try {
+                    await this.dataManager.loadInitialData();
+                } catch (error) {
+                    console.error('Erro ao atualizar dados:', error);
+                    this.showError('Erro ao atualizar dados');
+                }
+            });
+        }
     }
 
     updateDashboard(data) {
-        if (!data) {
-            console.error('Dados inválidos para atualização');
+        if (!data || !this.initialized) {
+            console.error('Dados inválidos ou dashboard não inicializado');
             return;
         }
 
-        const dashboardContent = document.getElementById('dashboardContent');
-        if (dashboardContent) {
-            dashboardContent.classList.remove('d-none');
-        } else {
-            console.warn('Elemento #dashboardContent não encontrado');
+        try {
+            // Remove loading state e mostra conteúdo
+            const loadingState = document.getElementById('loadingState');
+            const dashboardContent = document.getElementById('dashboardContent');
+            
+            if (loadingState) loadingState.classList.add('d-none');
+            if (dashboardContent) dashboardContent.classList.remove('d-none');
+
+            // Atualiza KPIs
+            this.updateKPIs(data.kpis || {});
+            
+            // Atualiza componentes visuais
+            if (this.chartManager) {
+                this.chartManager.updateCharts(data.graficos || {});
+            }
+            
+            if (this.tableManager) {
+                this.tableManager.updateTable(data.registros || []);
+            }
+            
+            this.updateTimestamp(data.ultima_atualizacao);
+            
+        } catch (error) {
+            console.error('Erro ao atualizar dashboard:', error);
+            this.showError('Erro ao atualizar dashboard');
         }
-
-        const totalAtendimentosElem = document.getElementById('totalAtendimentos');
-        const totalPendentesElem = document.getElementById('totalPendentes');
-        const totalConcluidosElem = document.getElementById('totalConcluidos');
-        const taxaConclusaoElem = document.getElementById('taxaConclusao');
-
-        console.debug('Verificando elementos dos KPIs:', {
-            totalAtendimentosElem,
-            totalPendentesElem,
-            totalConcluidosElem,
-            taxaConclusaoElem
-        });
-
-        if (totalAtendimentosElem) totalAtendimentosElem.innerText = data.kpis.total_registros || 0;
-        if (totalPendentesElem) totalPendentesElem.innerText = data.kpis.total_pendentes || 0;
-        if (totalConcluidosElem) totalConcluidosElem.innerText = data.kpis.total_concluidos || 0;
-        if (taxaConclusaoElem) taxaConclusaoElem.innerText = `${data.kpis.taxa_conclusao || 0}%`;
-
-        this.updateKPIs(data.kpis || {});
-        if (this.chartManager) this.chartManager.updateCharts(data.graficos || {});
-        if (this.tableManager) this.tableManager.updateTable(data.registros || []);
-        this.updateTimestamp(data.ultima_atualizacao);
     }
 
     updateKPIs(kpis) {
@@ -88,20 +125,40 @@ class DashboardManager {
             taxaConclusao: document.getElementById('taxaConclusao')
         };
 
-        Object.entries(elements).forEach(([key, element]) => {
-            if (!element) {
-                console.warn(`Elemento ${key} não encontrado no DOM`);
-                return;
-            }
+        try {
+            Object.entries(elements).forEach(([key, element]) => {
+                if (!element) {
+                    console.warn(`Elemento ${key} não encontrado`);
+                    return;
+                }
 
-            const value = kpis[key.toLowerCase()] || 0;
-            const formattedValue = key === 'taxaConclusao'
-                ? `${this.formatNumber(value, 1)}%`
-                : this.formatNumber(value);
+                let value = 0;
+                switch (key) {
+                    case 'totalAtendimentos':
+                        value = kpis.total_registros || 0;
+                        break;
+                    case 'totalPendentes':
+                        value = kpis.total_pendentes || 0;
+                        break;
+                    case 'totalConcluidos':
+                        value = kpis.total_concluidos || 0;
+                        break;
+                    case 'taxaConclusao':
+                        value = kpis.taxa_conclusao || 0;
+                        break;
+                }
 
-            const currentValue = parseInt(element.textContent.replace(/[^0-9.-]+/g, '')) || 0;
-            this.animateValue(element, currentValue, value);
-        });
+                const formattedValue = key === 'taxaConclusao' 
+                    ? `${this.formatNumber(value, 1)}%`
+                    : this.formatNumber(value);
+
+                this.animateValue(element, 
+                    parseFloat(element.textContent.replace(/[^0-9.-]+/g, '') || 0), 
+                    value);
+            });
+        } catch (error) {
+            console.error('Erro ao atualizar KPIs:', error);
+        }
     }
 
     animateValue(element, start, end) {
@@ -109,136 +166,220 @@ class DashboardManager {
 
         const duration = 500;
         const startTime = performance.now();
+        const startValue = parseFloat(start) || 0;
+        const endValue = parseFloat(end) || 0;
 
         const animate = (currentTime) => {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            const easeOutQuad = progress * (2 - progress);
-            const current = Math.round(start + (end - start) * easeOutQuad);
 
-            element.textContent = `${current}`;
-            if (progress < 1) requestAnimationFrame(animate);
+            const value = startValue + (endValue - startValue) * this.easeOutQuad(progress);
+            
+            if (element.id === 'taxaConclusao') {
+                element.textContent = `${this.formatNumber(value, 1)}%`;
+            } else {
+                element.textContent = this.formatNumber(value);
+            }
+
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
         };
 
         requestAnimationFrame(animate);
     }
 
+    easeOutQuad(x) {
+        return 1 - (1 - x) * (1 - x);
+    }
+
     updateTimestamp(timestamp) {
         const element = document.getElementById('lastUpdate');
-        if (element && timestamp) {
+        if (!element || !timestamp) return;
+
+        try {
             const date = new Date(parseInt(timestamp));
-            const options = { timeZone: this.timezone, hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            if (isNaN(date.getTime())) {
+                throw new Error('Invalid timestamp');
+            }
+
+            const options = {
+                timeZone: this.timezone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+
             element.textContent = date.toLocaleString('pt-BR', options);
-        } else {
-            console.warn('Elemento ou timestamp inválido ao atualizar');
+        } catch (error) {
+            console.error('Erro ao atualizar timestamp:', error);
+            element.textContent = 'Data indisponível';
         }
     }
 
     formatNumber(value, decimals = 0) {
-        return Number(value).toLocaleString('pt-BR', {
-            minimumFractionDigits: decimals,
-            maximumFractionDigits: decimals,
-        });
+        if (value === null || value === undefined || isNaN(value)) {
+            return '0';
+        }
+
+        try {
+            return Number(value).toLocaleString('pt-BR', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        } catch (error) {
+            console.error('Erro ao formatar número:', error);
+            return '0';
+        }
     }
 
     showError(message) {
+        console.error(message);
         const errorAlert = document.getElementById('updateError');
         if (errorAlert) {
-            errorAlert.textContent = message;
+            const errorMessage = errorAlert.querySelector('.error-message');
+            if (errorMessage) {
+                errorMessage.textContent = message;
+            }
             errorAlert.classList.remove('d-none');
-            setTimeout(() => errorAlert.classList.add('d-none'), 5000);
+            setTimeout(() => {
+                errorAlert.classList.add('d-none');
+            }, 5000);
         }
     }
 
     applyFilters(filters) {
-        if (!filters) {
-            console.error('Filtros inválidos');
+        if (!filters || !this.initialized) {
+            console.warn('Filtros inválidos ou dashboard não inicializado');
             return;
         }
 
-        console.debug('Aplicando filtros:', filters);
+        try {
+            const filteredData = this.dataManager.data.registros.filter(registro => {
+                return Object.entries(filters).every(([key, value]) => {
+                    if (!value || (Array.isArray(value) && value.length === 0)) {
+                        return true;
+                    }
 
-        const filteredData = this.dataManager.data.registros.filter((registro) => {
-            let passaFiltro = true;
+                    if (key === 'period') {
+                        return this.filterByPeriod(registro, value);
+                    }
 
-            if (filters.dataInicio && filters.dataFim) {
-                const dataRegistro = new Date(registro.data);
-                passaFiltro = passaFiltro && dataRegistro >= new Date(filters.dataInicio) && dataRegistro <= new Date(filters.dataFim);
-            }
+                    const fieldValue = this.getFieldValue(registro, key);
+                    return Array.isArray(value) ? value.includes(fieldValue) : value === fieldValue;
+                });
+            });
 
-            if (filters.status && filters.status.length > 0) {
-                passaFiltro = passaFiltro && filters.status.includes(registro.status_atendimento);
-            }
+            const updatedData = {
+                registros: filteredData,
+                kpis: this.calculateKPIs(filteredData),
+                graficos: this.calculateCharts(filteredData),
+                ultima_atualizacao: Date.now()
+            };
 
-            return passaFiltro;
-        });
+            this.updateDashboard(updatedData);
 
-        console.debug('Dados filtrados:', filteredData.length, filteredData);
+        } catch (error) {
+            console.error('Erro ao aplicar filtros:', error);
+            this.showError('Erro ao aplicar filtros');
+        }
+    }
 
-        const updatedData = {
-            registros: filteredData,
-            kpis: this.calculateKPIs(filteredData),
-            graficos: this.calculateCharts(filteredData),
-            ultima_atualizacao: Date.now(),
+    filterByPeriod(registro, period) {
+        if (!registro.data_hora || !period.start || !period.end) {
+            return true;
+        }
+
+        try {
+            const registroDate = new Date(parseInt(registro.data_hora));
+            const startDate = new Date(period.start);
+            startDate.setHours(0, 0, 0, 0);
+            const endDate = new Date(period.end);
+            endDate.setHours(23, 59, 59, 999);
+
+            return registroDate >= startDate && registroDate <= endDate;
+        } catch (error) {
+            console.error('Erro ao filtrar por período:', error);
+            return true;
+        }
+    }
+
+    getFieldValue(registro, key) {
+        const fieldMappings = {
+            'status': 'status_atendimento',
+            'tipo': 'tipo_atendimento',
+            'funcionario': 'funcionario',
+            'cliente': 'cliente',
+            'sistema': 'sistema',
+            'canal': 'canal_atendimento',
+            'relato': 'solicitacao_cliente',
+            'solicitacao': 'tipo_atendimento'
         };
 
-        this.updateDashboard(updatedData);
+        const fieldName = fieldMappings[key] || key;
+        return registro[fieldName] || '';
     }
 
     calculateKPIs(data) {
         if (!data || data.length === 0) {
-            console.warn('Nenhum dado para cálculo de KPIs');
             return {
                 total_registros: 0,
                 total_pendentes: 0,
                 total_concluidos: 0,
-                taxa_conclusao: 0,
+                taxa_conclusao: 0
             };
         }
 
-        const totalRegistros = data.length;
-        const totalPendentes = data.filter((registro) => registro.status_atendimento === 'Pendente').length;
-        const totalConcluidos = data.filter((registro) => registro.status_atendimento === 'Concluído').length;
-        const taxaConclusao = (totalConcluidos / totalRegistros) * 100;
-
-        console.debug('KPIs calculados:', {
-            total_registros: totalRegistros,
-            total_pendentes: totalPendentes,
-            total_concluidos: totalConcluidos,
-            taxa_conclusao: taxaConclusao,
-        });
+        const total = data.length;
+        const concluidos = data.filter(r => r.status_atendimento === 'Concluído').length;
+        const pendentes = data.filter(r => r.status_atendimento === 'Pendente').length;
+        const taxa = (concluidos / total) * 100;
 
         return {
-            total_registros: totalRegistros,
-            total_pendentes: totalPendentes,
-            total_concluidos: totalConcluidos,
-            taxa_conclusao: taxaConclusao.toFixed(1),
+            total_registros: total,
+            total_pendentes: pendentes,
+            total_concluidos: concluidos,
+            taxa_conclusao: parseFloat(taxa.toFixed(1))
         };
     }
 
     calculateCharts(data) {
         if (!data || data.length === 0) {
-            console.warn('Nenhum dado para cálculo de gráficos');
             return {};
         }
 
-        const tiposAtendimento = data.reduce((acc, registro) => {
-            const tipo = registro.tipo_atendimento || 'Não informado';
-            acc[tipo] = (acc[tipo] || 0) + 1;
-            return acc;
-        }, {});
-
-        const statusAtendimento = data.reduce((acc, registro) => {
-            const status = registro.status_atendimento || 'Não informado';
-            acc[status] = (acc[status] || 0) + 1;
-            return acc;
-        }, {});
-
-        console.debug('Gráficos calculados:', { tiposAtendimento, statusAtendimento });
-
-        return {
-            tiposAtendimento,
-            statusAtendimento,
+        const charts = {};
+        const fields = {
+            status: 'status_atendimento',
+            tipo: 'tipo_atendimento',
+            funcionario: 'funcionario',
+            cliente: 'cliente',
+            sistema: 'sistema',
+            canal: 'canal_atendimento',
+            relato: 'solicitacao_cliente',
+            solicitacao: 'tipo_atendimento'
         };
+
+        Object.entries(fields).forEach(([chartName, fieldName]) => {
+            const counts = data.reduce((acc, registro) => {
+                const value = registro[fieldName] || 'Não informado';
+                acc[value] = (acc[value] || 0) + 1;
+                return acc;
+            }, {});
+
+            const sortedEntries = Object.entries(counts)
+                .sort(([, a], [, b]) => b - a);
+
+            charts[chartName] = {
+                labels: sortedEntries.map(([label]) => label),
+                values: sortedEntries.map(([, value]) => value)
+            };
+        });
+
+        return charts;
     }
 }

@@ -6,8 +6,8 @@ class DashboardDataManager {
             kpis: {
                 total_registros: 0,
                 total_pendentes: 0,
-                taxa_conclusao: 0,
-                tempo_medio: 0
+                total_concluidos: 0,
+                taxa_conclusao: 0
             },
             graficos: {
                 status: { labels: [], values: [] },
@@ -67,6 +67,9 @@ class DashboardDataManager {
                 timestamp: new Date().toISOString()
             });
 
+            // Calcula KPIs iniciais
+            this.data.kpis = this.calculateKPIs(this.data.registros);
+
             document.dispatchEvent(new CustomEvent('dashboardUpdate', {
                 detail: this.data
             }));
@@ -117,8 +120,30 @@ class DashboardDataManager {
         }
     }
 
+    calculateKPIs(registros) {
+        if (!registros || registros.length === 0) {
+            return {
+                total_registros: 0,
+                total_pendentes: 0,
+                total_concluidos: 0,
+                taxa_conclusao: 0
+            };
+        }
+
+        const total = registros.length;
+        const concluidos = registros.filter(r => r.status_atendimento === 'Concluído').length;
+        const pendentes = registros.filter(r => r.status_atendimento === 'Pendente').length;
+        const taxa = (concluidos / total) * 100;
+
+        return {
+            total_registros: total,
+            total_pendentes: pendentes,
+            total_concluidos: concluidos,
+            taxa_conclusao: parseFloat(taxa.toFixed(1))
+        };
+    }
+
     applyFilters(filters) {
-        console.info('teste');
         if (!filters || Object.keys(filters).length === 0) {
             console.debug('Nenhum filtro para aplicar');
             return;
@@ -127,24 +152,15 @@ class DashboardDataManager {
         try {
             console.debug('Aplicando filtros:', filters);
 
-            console.info('antes kpi');
-            const filteredRegistros = this.#filterData(this.data.registros, filters);
-            console.info('dps kpi');
-
-            console.info('Registros enviados para cálculo de KPIs:', filteredRegistros);
+            const filteredRegistros = this.filterData(this.data.registros, filters);
+            console.info('Registros filtrados:', filteredRegistros.length);
 
             const updatedData = {
                 registros: filteredRegistros,
-                kpis: this.#calcularKPIs(filteredRegistros),
-                graficos: this.#calcularGraficos(filteredRegistros),
+                kpis: this.calculateKPIs(filteredRegistros),
+                graficos: this.calculateCharts(filteredRegistros),
                 ultima_atualizacao: new Date().getTime()
             };
-
-            console.info('Dados filtrados:', {
-                antes: this.data.registros.length,
-                depois: filteredRegistros.length,
-                filtrosAtivos: Object.keys(filters).length
-            });
 
             document.dispatchEvent(new CustomEvent('dashboardUpdate', {
                 detail: updatedData
@@ -156,7 +172,7 @@ class DashboardDataManager {
         }
     }
 
-    #filterData(registros, filters) {
+    filterData(registros, filters) {
         return registros.filter(registro => {
             return Object.entries(filters).every(([tipo, valores]) => {
                 if (!valores || (Array.isArray(valores) && valores.length === 0)) {
@@ -164,16 +180,16 @@ class DashboardDataManager {
                 }
 
                 if (tipo === 'period') {
-                    return this.#filterByPeriod(registro, valores);
+                    return this.filterByPeriod(registro, valores);
                 }
 
-                const valor = this.#getFieldValue(registro, tipo);
+                const valor = this.getFieldValue(registro, tipo);
                 return Array.isArray(valores) ? valores.includes(valor) : true;
             });
         });
     }
 
-    #filterByPeriod(registro, period) {
+    filterByPeriod(registro, period) {
         if (!registro.data_hora || !period.start || !period.end) {
             return true;
         }
@@ -197,7 +213,7 @@ class DashboardDataManager {
         }
     }
 
-    #getFieldValue(registro, tipo) {
+    getFieldValue(registro, tipo) {
         const mapeamento = {
             'status': 'status_atendimento',
             'tipo': 'tipo_atendimento',
@@ -212,61 +228,36 @@ class DashboardDataManager {
         return registro[mapeamento[tipo] || tipo] || '';
     }
 
-    #calcularKPIs(registros) {
-        console.info('KPIs - Registros recebidos para cálculo:', registros);
-        const total = registros.length;
-        const pendentes = registros.filter(r => r.status_atendimento === 'Pendente').length;
-        const concluidos = registros.filter(r => r.status_atendimento === 'Concluído').length;
-        const taxa_conclusao = total > 0 ? ((concluidos / total) * 100) : 0;
-        console.info('KPIs - Total de registros:', total);
-        console.info('KPIs - Total pendentes:', pendentes);
-        console.info('KPIs - Total concluídos:', concluidos);
-        console.info('KPIs - Taxa de conclusão:', taxa_conclusao);
-
-        // Logs intermediários
-        console.info('Total de registros:', total);
-        console.info('Total pendentes:', pendentes);
-        console.debug('Total concluídos:', concluidos);
-        console.info('Taxa de conclusão:', taxa_conclusao);
-
-        const kpis = {
-            total_registros: total,
-            total_pendentes: pendentes,
-            total_concluidos: concluidos,
-            taxa_conclusao: taxa_conclusao.toFixed(1),
+    calculateCharts(registros) {
+        const charts = {};
+        const fields = {
+            status: 'status_atendimento',
+            tipo: 'tipo_atendimento',
+            funcionario: 'funcionario',
+            cliente: 'cliente',
+            sistema: 'sistema',
+            canal: 'canal_atendimento',
+            relato: 'solicitacao_cliente',
+            solicitacao: 'tipo_atendimento'
         };
 
-        console.info('KPIs calculados:', kpis); // Log final
-        return kpis;
-    }
+        Object.entries(fields).forEach(([chartName, fieldName]) => {
+            const counts = registros.reduce((acc, registro) => {
+                const value = registro[fieldName] || 'Não informado';
+                acc[value] = (acc[value] || 0) + 1;
+                return acc;
+            }, {});
 
-    #calcularGraficos(registros) {
-        return {
-            status: this.#contarValores(registros, 'status_atendimento'),
-            tipo: this.#contarValores(registros, 'tipo_atendimento'),
-            funcionario: this.#contarValores(registros, 'funcionario'),
-            cliente: this.#contarValores(registros, 'cliente'),
-            sistema: this.#contarValores(registros, 'sistema'),
-            canal: this.#contarValores(registros, 'canal_atendimento'),
-            relato: this.#contarValores(registros, 'solicitacao_cliente'),
-            solicitacao: this.#contarValores(registros, 'tipo_atendimento')
-        };
-    }
+            const sortedEntries = Object.entries(counts)
+                .sort(([, a], [, b]) => b - a);
 
-    #contarValores(registros, campo) {
-        const contagem = registros.reduce((acc, registro) => {
-            const valor = registro[campo] || 'Não informado';
-            acc[valor] = (acc[valor] || 0) + 1;
-            return acc;
-        }, {});
+            charts[chartName] = {
+                labels: sortedEntries.map(([label]) => label),
+                values: sortedEntries.map(([, value]) => value)
+            };
+        });
 
-        const ordenado = Object.entries(contagem)
-            .sort(([, a], [, b]) => b - a);
-
-        return {
-            labels: ordenado.map(([label]) => label),
-            values: ordenado.map(([, value]) => value)
-        };
+        return charts;
     }
 
     update(newData) {

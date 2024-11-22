@@ -1,10 +1,8 @@
 class ChartManager {
-    constructor(initialData) {
+    constructor() {
         console.info('Inicializando ChartManager');
         this.charts = {};
         this.colorPalette = new ColorPaletteManager();
-        this.initialData = initialData || {};
-        this.initCharts();
         this.setupEventListeners();
     }
 
@@ -20,8 +18,8 @@ class ChartManager {
         });
     }
 
-    initCharts() {
-        console.debug('Inicializando gráficos com dados:', this.initialData);
+    initCharts(data) {
+        console.debug('Inicializando gráficos com dados:', data);
         
         const commonOptions = {
             responsive: true,
@@ -88,26 +86,9 @@ class ChartManager {
             }
         };
 
-        // Status como doughnut
-        this.createChart('status', 'doughnut', {
-            ...commonOptions,
-            indexAxis: undefined,
-            cutout: '60%',
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'right',
-                    labels: {
-                        padding: 15,
-                        usePointStyle: true,
-                        pointStyle: 'circle'
-                    }
-                }
-            }
-        });
-
-        // Demais gráficos como barras horizontais
-        const barCharts = [
+        // Lista de todos os tipos de gráficos
+        const chartTypes = [
+            'status',
             'tipo',
             'funcionario',
             'cliente',
@@ -117,24 +98,22 @@ class ChartManager {
             'solicitacao'
         ];
 
-        barCharts.forEach(type => {
-            this.createChart(type, 'bar', {
-                ...commonOptions,
-                hover: {
-                    mode: 'nearest',
-                    intersect: false,
-                    animationDuration: 150
-                },
-                datasets: {
-                    bar: {
-                        borderWidth: 0,
-                        borderRadius: 4,
-                        barPercentage: 0.8,
-                        categoryPercentage: 0.9
-                    }
-                }
-            });
+        // Destrói todos os gráficos existentes
+        this.destroyAllCharts();
+
+        // Cria todos os gráficos como barras horizontais
+        chartTypes.forEach(type => {
+            this.createChart(type, 'bar', commonOptions, data[type] || { labels: [], values: [] });
         });
+    }
+
+    destroyAllCharts() {
+        Object.values(this.charts).forEach(chart => {
+            if (chart) {
+                chart.destroy();
+            }
+        });
+        this.charts = {};
     }
 
     calculateChartDimensions(dataLength) {
@@ -168,7 +147,7 @@ class ChartManager {
         };
     }
 
-    createChart(type, chartType, options) {
+    createChart(type, chartType, baseOptions, data) {
         const elementId = `${type}Chart`;
         const canvas = document.getElementById(elementId);
         
@@ -176,31 +155,52 @@ class ChartManager {
             console.error(`Elemento ${elementId} não encontrado`);
             return;
         }
-    
-        const ctx = canvas.getContext('2d');
-        const data = this.initialData[type] || { labels: [], values: [] };
-        const dataLength = data.labels.length;
-        const colors = type === 'status' ? 
-            data.labels.map(label => this.colorPalette.getStatusColor(label)) :
-            this.colorPalette.getChartColors(dataLength);
-        
-        const dimensions = this.calculateChartDimensions(dataLength);
-        
-        if (dimensions.needsScroll) {
-            canvas.parentElement.style.height = `${dimensions.height}px`;
+
+        // Destrói o gráfico existente se houver
+        if (this.charts[type]) {
+            this.charts[type].destroy();
         }
-    
+
+        const ctx = canvas.getContext('2d');
+        
+        // Ordena os dados do maior para o menor
+        const sortedData = this.sortChartData(data);
+        const dataLength = sortedData.labels.length;
+        
+        const colors = this.colorPalette.getChartColors(dataLength);
+        const dimensions = this.calculateChartDimensions(dataLength);
+
+        // Configura o container para scroll se necessário
+        const container = canvas.closest('.chart-container');
+        if (container) {
+            if (dimensions.needsScroll) {
+                container.style.height = `${dimensions.height}px`;
+                container.classList.add('scrollable');
+            } else {
+                container.style.height = '300px';
+                container.classList.remove('scrollable');
+            }
+        }
+
+        const options = {
+            ...baseOptions,
+            datasets: {
+                bar: {
+                    barPercentage: dimensions.barPercentage,
+                    categoryPercentage: dimensions.categoryPercentage,
+                    borderRadius: 4,
+                    borderWidth: 0
+                }
+            }
+        };
+
         const chart = new Chart(ctx, {
             type: chartType,
             data: {
-                labels: data.labels,
+                labels: sortedData.labels,
                 datasets: [{
-                    data: data.values,
+                    data: sortedData.values,
                     backgroundColor: colors,
-                    borderWidth: 0,
-                    borderRadius: 4,
-                    barPercentage: dimensions.barPercentage,
-                    categoryPercentage: dimensions.categoryPercentage,
                     hoverBackgroundColor: colors.map(color => 
                         this.colorPalette.adjustOpacity(color, 0.8)
                     )
@@ -208,8 +208,6 @@ class ChartManager {
             },
             options: {
                 ...options,
-                maintainAspectRatio: false,
-                responsive: true,
                 onClick: (event, elements) => {
                     if (elements.length > 0) {
                         const index = elements[0].index;
@@ -221,11 +219,29 @@ class ChartManager {
                 }
             }
         });
-    
+
         this.charts[type] = chart;
         return chart;
     }
-    
+
+    sortChartData(data) {
+        if (!data || !data.labels || !data.values) {
+            return { labels: [], values: [] };
+        }
+
+        const pairs = data.labels.map((label, index) => ({
+            label,
+            value: data.values[index]
+        }));
+
+        pairs.sort((a, b) => b.value - a.value);
+
+        return {
+            labels: pairs.map(pair => pair.label),
+            values: pairs.map(pair => pair.value)
+        };
+    }
+
     updateCharts(data) {
         if (!data) {
             console.error('Dados inválidos para atualização dos gráficos');
@@ -239,36 +255,33 @@ class ChartManager {
                 return;
             }
 
-            const activeFilters = window.dashboardManager?.filterManager?.getActiveFilters() || {};
-            const dataLength = chartData.labels.length;
+            const sortedData = this.sortChartData(chartData);
+            const dataLength = sortedData.labels.length;
             const dimensions = this.calculateChartDimensions(dataLength);
             
-            chart.data.labels = chartData.labels;
-            chart.data.datasets[0].data = chartData.values;
+            chart.data.labels = sortedData.labels;
+            chart.data.datasets[0].data = sortedData.values;
             
-            chart.data.datasets[0].backgroundColor = chartData.labels.map((label, index) => {
-                const baseColor = type === 'status' ? 
-                    this.colorPalette.getStatusColor(label) :
-                    this.colorPalette.getChartColors(dataLength)[index];
-                    
-                return activeFilters[type]?.includes(label) ?
-                    this.colorPalette.adjustOpacity(baseColor, 0.8) :
-                    baseColor;
-            });
-
-            chart.data.datasets[0].hoverBackgroundColor = chart.data.datasets[0].backgroundColor.map(color => 
+            const colors = this.colorPalette.getChartColors(dataLength);
+            chart.data.datasets[0].backgroundColor = colors;
+            chart.data.datasets[0].hoverBackgroundColor = colors.map(color => 
                 this.colorPalette.adjustOpacity(color, 0.8)
             );
 
             chart.data.datasets[0].barPercentage = dimensions.barPercentage;
             chart.data.datasets[0].categoryPercentage = dimensions.categoryPercentage;
-            
-            if (dimensions.needsScroll) {
-                chart.canvas.parentElement.style.height = `${dimensions.height}px`;
-            } else {
-                chart.canvas.parentElement.style.height = '300px';
+
+            const container = chart.canvas.closest('.chart-container');
+            if (container) {
+                if (dimensions.needsScroll) {
+                    container.style.height = `${dimensions.height}px`;
+                    container.classList.add('scrollable');
+                } else {
+                    container.style.height = '300px';
+                    container.classList.remove('scrollable');
+                }
             }
-            
+
             chart.update('none');
         });
     }
@@ -279,8 +292,15 @@ class ChartManager {
                 const dataLength = chart.data.labels.length;
                 const dimensions = this.calculateChartDimensions(dataLength);
                 
-                if (dimensions.needsScroll) {
-                    chart.canvas.parentElement.style.height = `${dimensions.height}px`;
+                const container = chart.canvas.closest('.chart-container');
+                if (container) {
+                    if (dimensions.needsScroll) {
+                        container.style.height = `${dimensions.height}px`;
+                        container.classList.add('scrollable');
+                    } else {
+                        container.style.height = '300px';
+                        container.classList.remove('scrollable');
+                    }
                 }
                 
                 chart.resize();
