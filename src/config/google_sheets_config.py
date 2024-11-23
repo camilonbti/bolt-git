@@ -4,11 +4,24 @@ Configurações específicas para integração com Google Sheets
 import os
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from dotenv import load_dotenv
+import logging
+
+# Configura logging
+logger = logging.getLogger(__name__)
+
+# Carrega variáveis de ambiente
+load_dotenv()
+
+# Log do carregamento das configurações
+logger.info("=== Carregando Configurações do Google Sheets ===")
+logger.info(f"Diretório Base: {Path(__file__).resolve().parent.parent.parent}")
+logger.info(f"GOOGLE_CREDENTIALS_PATH: {os.getenv('GOOGLE_CREDENTIALS_PATH')}")
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 GOOGLE_SHEETS_CONFIG = {
-    "credentials_path": os.path.join(BASE_DIR, "credentials.json"),
+    "credentials_path": os.getenv('GOOGLE_CREDENTIALS_PATH'),
     "sheet_url": "https://docs.google.com/spreadsheets/d/1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc/edit?usp=sharing",
     "scopes": [
         "https://www.googleapis.com/auth/spreadsheets",
@@ -21,6 +34,12 @@ GOOGLE_SHEETS_CONFIG = {
     "default_start_time": "00:00:00",
     "default_end_time": "23:59:59.999999"
 }
+
+# Log das configurações carregadas
+logger.info("Configurações carregadas:")
+for key, value in GOOGLE_SHEETS_CONFIG.items():
+    logger.info(f"{key}: {value}")
+logger.info("==========================================")
 
 def get_timezone():
     """Retorna o timezone configurado."""
