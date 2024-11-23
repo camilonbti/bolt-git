@@ -12,6 +12,10 @@ class LoggerManager:
         self.log_dir = Path(__file__).resolve().parent.parent.parent / 'logs'
         self.log_dir.mkdir(exist_ok=True)
         
+        # Arquivos de log
+        self.app_log = self.log_dir / f'app_{datetime.now():%Y%m}.log'
+        self.api_log = self.log_dir / f'api_{datetime.now():%Y%m}.log'
+        
         # Formatos de log detalhados
         self.file_format = logging.Formatter(
             '[%(asctime)s] %(levelname)-8s [%(name)s:%(funcName)s:%(lineno)d] %(message)s',
@@ -23,7 +27,7 @@ class LoggerManager:
         )
         
         # Configuração global
-        logging.getLogger().setLevel(logging.INFO)
+        logging.getLogger().setLevel(logging.DEBUG)
 
     def get_logger(self, name: str) -> logging.Logger:
         """
@@ -42,15 +46,26 @@ class LoggerManager:
             return logger
             
         # Handler de arquivo com rotação
-        log_file = self.log_dir / f"{name.split('.')[-1]}_{datetime.now():%Y%m}.log"
         file_handler = logging.handlers.RotatingFileHandler(
-            log_file,
+            self.app_log,
             maxBytes=5 * 1024 * 1024,  # 5 MB
             backupCount=5,
             encoding='utf-8'
         )
         file_handler.setFormatter(self.file_format)
         file_handler.setLevel(logging.DEBUG)
+        
+        # Handler específico para API
+        if name.startswith('api'):
+            api_handler = logging.handlers.RotatingFileHandler(
+                self.api_log,
+                maxBytes=5 * 1024 * 1024,
+                backupCount=5,
+                encoding='utf-8'
+            )
+            api_handler.setFormatter(self.file_format)
+            api_handler.setLevel(logging.DEBUG)
+            logger.addHandler(api_handler)
         
         # Handler de console com cores
         console_handler = ColoredConsoleHandler()
