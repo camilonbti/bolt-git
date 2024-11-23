@@ -1,9 +1,26 @@
 class FilterManager {
     constructor() {
         console.info('Inicializando FilterManager');
-        this.timezone = 'America/Sao_Paulo';
         this.filters = new Map();
         this.filterContainer = document.getElementById('activeFilters');
+        
+        // Inicializa as constantes de data e hora com timezone São Paulo
+        const today = new Date();
+        const brasiliaOffset = -180; // GMT-3 em minutos
+        const brasiliaTime = new Date(today.getTime() + (today.getTimezoneOffset() + brasiliaOffset) * 60000);
+        
+        // Define data inicial e final como hoje
+        this.data_ini = new Date(brasiliaTime);
+        this.data_fim = new Date(brasiliaTime);
+
+        // Aplica horários nas datas
+        this.data_ini.setHours(0, 0, 0, 0);
+        this.data_fim.setHours(23, 59, 59, 999);
+
+        console.debug('Datas inicializadas:', {
+            dataInicial: this.data_ini.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+            dataFinal: this.data_fim.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+        });
         
         if (!this.filterContainer) {
             console.error('Elemento activeFilters não encontrado');
@@ -20,102 +37,98 @@ class FilterManager {
             this.toggleFilter(event.detail.type, event.detail.value);
         });
 
-        const startDate = document.getElementById('startDate');
-        const endDate = document.getElementById('endDate');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
 
-        if (startDate && endDate) {
-            startDate.addEventListener('change', () => this.handleDateChange());
-            endDate.addEventListener('change', () => this.handleDateChange());
+        if (startDateInput && endDateInput) {
+            startDateInput.addEventListener('change', () => this.handleDateChange());
+            endDateInput.addEventListener('change', () => this.handleDateChange());
         }
+
+        // Escuta o evento de dados carregados
+        document.addEventListener('dashboardUpdate', (event) => {
+            if (event.detail && event.detail.registros) {
+                console.debug('Dados atualizados, total de registros:', event.detail.registros.length);
+                // Aplica filtros aos novos dados
+                this.applyInitialPeriodFilter();
+            }
+        });
+    }
+
+    applyInitialPeriodFilter() {
+        console.debug('Aplicando filtro de período inicial');
+        
+        const filters = this.getActiveFilters();
+        console.debug('Filtros ativos:', filters);
+        
+        // Força a atualização da UI e notifica a mudança
+        this.updateUI();
+        this.notifyFilterChange();
     }
 
     handleDateChange() {
-        const startDate = document.getElementById('startDate');
-        const endDate = document.getElementById('endDate');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
 
-        if (startDate && endDate && startDate.value && endDate.value) {
-            if (this.validateDates(startDate.value, endDate.value)) {
-                this.toggleFilter('period', {
-                    start: startDate.value,
-                    end: endDate.value
-                });
-            }
+        if (!startDateInput || !endDateInput || !startDateInput.value || !endDateInput.value) {
+            console.warn('Campos de data não preenchidos');
+            return;
         }
-    }
 
-    getDateWithMinTime(dateStr) {
-        return `${dateStr}T00:00:00.000-03:00`;
-    }
-
-    getDateWithMaxTime(dateStr) {
-        return `${dateStr}T23:59:59.999-03:00`;
-    }
-
-    initializeDateFields() {
         try {
-            const now = new Date();
-            const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            console.debug('Valores dos inputs:', {
+                startDate: startDateInput.value,
+                endDate: endDateInput.value
+            });
+
+            // Atualiza as datas mantendo o timezone de São Paulo
+            const startDate = new Date(startDateInput.value + 'T00:00:00-03:00');
+            const endDate = new Date(endDateInput.value + 'T23:59:59-03:00');
             
-            const startDateInput = document.getElementById('startDate');
-            const endDateInput = document.getElementById('endDate');
-            
-            if (!startDateInput || !endDateInput) {
-                console.error('Campos de data não encontrados');
+            this.data_ini = startDate;
+            this.data_fim = endDate;
+
+            console.debug('Datas atualizadas:', {
+                dataInicial: this.data_ini.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+                dataFinal: this.data_fim.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+            });
+
+            if (!this.validateDates()) {
                 return;
             }
-            
-            startDateInput.value = this.formatDateForInput(firstDayOfMonth);
-            endDateInput.value = this.formatDateForInput(now);
-            
-            this.toggleFilter('period', {
-                start: startDateInput.value,
-                end: endDateInput.value
-            });
-            
-            console.debug('Campos de data inicializados:', {
-                start: startDateInput.value,
-                end: endDateInput.value
-            });
+
+            this.updateUI();
+            this.notifyFilterChange();
         } catch (error) {
-            console.error('Erro ao inicializar campos de data:', error);
+            console.error('Erro ao processar datas:', error);
+            this.showError('Erro ao processar datas');
         }
     }
 
-    formatDateForInput(date) {
+    validateDates() {
         try {
-            const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-            return localDate.toISOString().split('T')[0];
-        } catch (error) {
-            console.error('Erro ao formatar data para input:', error);
-            return '';
-        }
-    }
+            const now = new Date();
+            const today = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+            today.setHours(23, 59, 59, 999);
 
-    formatDateForDisplay(dateStr) {
-        try {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('pt-BR', {
-                timeZone: this.timezone
+            console.debug('Validando datas:', {
+                dataInicial: this.data_ini.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+                dataFinal: this.data_fim.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+                hoje: today.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
             });
-        } catch (error) {
-            console.error('Erro ao formatar data para exibição:', error);
-            return dateStr;
-        }
-    }
 
-    validateDates(startDate, endDate) {
-        try {
-            const start = new Date(this.getDateWithMinTime(startDate));
-            const end = new Date(this.getDateWithMaxTime(endDate));
-            const today = new Date();
-            
-            if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            if (isNaN(this.data_ini.getTime()) || isNaN(this.data_fim.getTime())) {
                 this.showError('Data inválida');
                 return false;
             }
 
-            if (start > end) {
+            if (this.data_ini > this.data_fim) {
                 this.showError('Data inicial não pode ser maior que a data final');
+                return false;
+            }
+
+            if (this.data_fim > today) {
+                this.showError('Não é possível selecionar datas futuras');
                 return false;
             }
 
@@ -126,34 +139,67 @@ class FilterManager {
         }
     }
 
-    toggleFilter(type, value) {
-        console.debug(`Alternando filtro: ${type} = ${JSON.stringify(value)}`);
+    initializeDateFields() {
+        try {
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            
+            if (!startDateInput || !endDateInput) {
+                console.error('Campos de data não encontrados');
+                return;
+            }
+            
+            // Formata as datas para o input
+            startDateInput.value = this.formatDateForInput(this.data_ini);
+            endDateInput.value = this.formatDateForInput(this.data_fim);
+            
+            console.debug('Campos de data inicializados:', {
+                dataInicial: startDateInput.value,
+                dataFinal: endDateInput.value
+            });
 
-        if (type === 'period') {
-            if (value && value.start && value.end) {
-                this.filters.set(type, {
-                    start: this.getDateWithMinTime(value.start),
-                    end: this.getDateWithMaxTime(value.end)
-                });
-            } else {
-                this.filters.delete(type);
-            }
-        } else {
-            if (!this.filters.has(type)) {
-                this.filters.set(type, new Set());
-            }
-
-            const filterSet = this.filters.get(type);
-            if (filterSet.has(value)) {
-                filterSet.delete(value);
-            } else {
-                filterSet.add(value);
-            }
-
-            if (filterSet.size === 0) {
-                this.filters.delete(type);
-            }
+            // Aplica o filtro inicial
+            this.applyInitialPeriodFilter();
+        } catch (error) {
+            console.error('Erro ao inicializar campos de data:', error);
         }
+    }
+
+    formatDateForInput(date) {
+        try {
+            const d = new Date(date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        } catch (error) {
+            console.error('Erro ao formatar data para input:', error);
+            return '';
+        }
+    }
+
+    toggleFilter(type, value) {
+        console.debug('Toggle filter:', { type, value });
+
+        // Período é sempre obrigatório e não pode ser removido
+        if (type === 'period') return;
+
+        if (!this.filters.has(type)) {
+            this.filters.set(type, new Set());
+        }
+
+        const filterSet = this.filters.get(type);
+        if (filterSet.has(value)) {
+            filterSet.delete(value);
+        } else {
+            filterSet.add(value);
+        }
+
+        if (filterSet.size === 0) {
+            this.filters.delete(type);
+        }
+
+        console.debug('Filtros após toggle:', this.getActiveFilters());
 
         this.updateUI();
         this.notifyFilterChange();
@@ -165,58 +211,39 @@ class FilterManager {
         this.filterContainer.innerHTML = '';
         let totalFiltros = 0;
         
-        const periodFilter = this.filters.get('period');
-        if (periodFilter) {
-            totalFiltros++;
-            const filterItem = this.createPeriodFilterItem(periodFilter);
-            this.filterContainer.appendChild(filterItem);
-        }
+        // Sempre mostra o filtro de período
+        const periodFilter = this.createPeriodFilterItem();
+        this.filterContainer.appendChild(periodFilter);
+        totalFiltros++;
         
         this.filters.forEach((values, type) => {
-            if (type !== 'period' && values instanceof Set) {
-                values.forEach(value => {
-                    totalFiltros++;
-                    const filterItem = this.createFilterItem(type, value);
-                    this.filterContainer.appendChild(filterItem);
-                });
-            }
+            values.forEach(value => {
+                totalFiltros++;
+                const filterItem = this.createFilterItem(type, value);
+                this.filterContainer.appendChild(filterItem);
+            });
         });
 
-        if (totalFiltros > 0) {
+        if (totalFiltros > 1) { // > 1 porque o período sempre está presente
             const clearBtn = document.createElement('button');
             clearBtn.className = 'btn btn-sm btn-outline-secondary ms-2';
             clearBtn.innerHTML = '<i class="fas fa-times me-1"></i>Limpar Filtros';
             clearBtn.onclick = () => this.clearFilters();
             this.filterContainer.appendChild(clearBtn);
-        } else {
-            const noFilters = document.createElement('div');
-            noFilters.className = 'no-filters';
-            noFilters.textContent = 'Nenhum filtro aplicado';
-            this.filterContainer.appendChild(noFilters);
         }
+
+        console.debug('UI atualizada, total de filtros:', totalFiltros);
     }
 
-    createPeriodFilterItem(period) {
+    createPeriodFilterItem() {
         const item = document.createElement('div');
         item.className = 'filter-item period-filter-item';
         
         const label = document.createElement('span');
         label.className = 'filter-label';
+        label.textContent = `Período: ${this.data_ini.toLocaleDateString('pt-BR')} até ${this.data_fim.toLocaleDateString('pt-BR')}`;
         
-        const startDate = this.formatDateForDisplay(period.start);
-        const endDate = this.formatDateForDisplay(period.end);
-        label.textContent = `Período: ${startDate} até ${endDate}`;
-        
-        const removeBtn = document.createElement('span');
-        removeBtn.className = 'remove-filter';
-        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-        removeBtn.onclick = (e) => {
-            e.stopPropagation();
-            this.initializeDateFields();
-        };
-
         item.appendChild(label);
-        item.appendChild(removeBtn);
         return item;
     }
 
@@ -249,29 +276,42 @@ class FilterManager {
             cliente: 'Cliente',
             sistema: 'Sistema',
             canal: 'Canal',
-            period: 'Período',
             relato: 'Relato',
             solicitacao: 'Solicitação'
         };
         return labels[type] || type;
     }
 
-    notifyFilterChange() {
-        const activeFilters = {};
+    getActiveFilters() {
+        // Sempre inclui o período nos filtros ativos
+        const activeFilters = {
+            period: {
+                start: this.data_ini.getTime(),
+                end: this.data_fim.getTime()
+            }
+        };
+        
         this.filters.forEach((values, type) => {
-            if (type === 'period') {
-                activeFilters[type] = values;
-            } else if (values instanceof Set) {
+            if (values instanceof Set) {
                 activeFilters[type] = Array.from(values);
             }
         });
 
+        console.debug('Filtros ativos:', activeFilters);
+        return activeFilters;
+    }
+
+    notifyFilterChange() {
+        const filters = this.getActiveFilters();
+        console.debug('Notificando mudança de filtros:', filters);
+        
         document.dispatchEvent(new CustomEvent('filterChange', {
-            detail: activeFilters
+            detail: filters
         }));
     }
 
     showError(message) {
+        console.error(message);
         const errorAlert = document.getElementById('updateError');
         if (errorAlert) {
             const errorMessage = errorAlert.querySelector('.error-message');
@@ -286,9 +326,8 @@ class FilterManager {
     }
 
     clearFilters() {
-        console.debug('Limpando todos os filtros');
+        console.debug('Limpando filtros (exceto período)');
         this.filters.clear();
-        this.initializeDateFields();
         this.updateUI();
         this.notifyFilterChange();
     }
