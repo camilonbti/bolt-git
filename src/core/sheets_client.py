@@ -18,7 +18,6 @@ import logging
 import os
 import json
 import traceback
-from pathlib import Path
 from dotenv import load_dotenv
 
 # Carrega variáveis de ambiente
@@ -33,14 +32,11 @@ class GoogleSheetsClient:
         try:
             # Carrega configurações
             self.config = GOOGLE_SHEETS_CONFIG
+            logger.info(f"********{GOOGLE_SHEETS_CONFIG}")
             logger.info("Configurações carregadas:")
             for key, value in self.config.items():
                 if key != "scopes":  # Evita log muito extenso
                     logger.info(f"{key}: {value}")
-            
-            # Obtém diretório atual
-            self.current_dir = os.getcwd()
-            logger.info(f"Diretório atual: {self.current_dir}")
             
             # Inicializa componentes
             self.credentials = self._get_credentials()
@@ -60,23 +56,12 @@ class GoogleSheetsClient:
     def _get_credentials(self):
         """Obtém as credenciais do Google Sheets."""
         try:
-            credentials_path = os.path.abspath(self.config["credentials_path"])
+            credentials_path = self.config["credentials_path"]
             logger.info(f"Tentando carregar credenciais de: {credentials_path}")
             
             if not os.path.exists(credentials_path):
                 error_msg = f"Arquivo de credenciais não encontrado em: {credentials_path}"
                 logger.critical(error_msg)
-                
-                # Lista diretório pai para debug
-                parent_dir = os.path.dirname(credentials_path)
-                if os.path.exists(parent_dir):
-                    logger.info(f"Conteúdo do diretório pai ({parent_dir}):")
-                    try:
-                        for item in os.listdir(parent_dir):
-                            logger.info(f"  - {item}")
-                    except Exception as e:
-                        logger.error(f"Erro ao listar diretório: {str(e)}")
-                
                 raise FileNotFoundError(error_msg)
             
             # Verifica permissões do arquivo
@@ -99,8 +84,6 @@ class GoogleSheetsClient:
                             raise ValueError(f"Credenciais inválidas: campos ausentes {missing_fields}")
                             
                         logger.info("✓ Todos os campos obrigatórios presentes")
-                        logger.info(f"Project ID: {creds_json.get('project_id')}")
-                        logger.info(f"Client Email: {creds_json.get('client_email')}")
                         
                     except json.JSONDecodeError as e:
                         logger.error(f"✗ Arquivo não é um JSON válido: {str(e)}")

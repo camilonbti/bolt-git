@@ -3,24 +3,29 @@ Configuração centralizada dos campos do dashboard
 """
 from typing import Dict, Any
 from zoneinfo import ZoneInfo
+import os
+from dotenv import load_dotenv
+
+# Carrega variáveis de ambiente
+load_dotenv()
 
 # Timezone padrão
-TIMEZONE = ZoneInfo("America/Sao_Paulo")
+TIMEZONE = ZoneInfo(os.getenv('TZ', "America/Sao_Paulo"))
 
 # Configuração do Google Sheets
 GOOGLE_SHEETS_CONFIG = {
-    "credentials_path": "credentials.json",
-    "sheet_url": "https://docs.google.com/spreadsheets/d/1ccjt8MlDcp-QAlY_yrRA-r7eIVLPeaNcAsBFghyvlEc/edit?usp=sharing",
+    "credentials_path": os.getenv('GOOGLE_CREDENTIALS_PATH', 'credentials.json'),
+    "sheet_url": os.getenv('GOOGLE_SHEETS_URL'),
     "scopes": [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ],
-    "default_range": "Sheet1!A1:Z1000",
-    "update_interval": 300,  # 5 minutos
+    "default_range": os.getenv('GOOGLE_SHEETS_RANGE', "Sheet1!A1:Z1000"),
+    "update_interval": int(os.getenv('UPDATE_INTERVAL', '300')),  # 5 minutos
     "timezone": TIMEZONE,
-    "date_format": "%d/%m/%Y %H:%M:%S",
-    "default_start_time": "00:00:00",
-    "default_end_time": "23:59:59.999999"
+    "date_format": os.getenv('DATE_FORMAT', "%d/%m/%Y %H:%M:%S"),
+    "default_start_time": os.getenv('DEFAULT_START_TIME', "00:00:00"),
+    "default_end_time": os.getenv('DEFAULT_END_TIME', "23:59:59.999999")
 }
 
 # Mapeamento de nomes das colunas da planilha para nomes internos
@@ -39,16 +44,16 @@ MAPEAMENTO_COLUNAS = {
 
 # Valores default para campos vazios
 VALORES_DEFAULT = {
-    'data_hora': '1899-12-30 00:00:00',
-    'funcionario': 'Não informado',
-    'cliente': 'Não informado',
-    'solicitante': 'Não informado',
-    'solicitacao_cliente': 'Sem relato',
-    'descricao_atendimento': 'Sem descrição',
-    'status_atendimento': 'Pendente',
-    'tipo_atendimento': 'Não categorizado',
-    'sistema': 'Não especificado',
-    'canal_atendimento': 'Não especificado'
+    'data_hora': os.getenv('DEFAULT_DATETIME', '1899-12-30 00:00:00'),
+    'funcionario': os.getenv('DEFAULT_FUNCIONARIO', 'Não informado'),
+    'cliente': os.getenv('DEFAULT_CLIENTE', 'Não informado'),
+    'solicitante': os.getenv('DEFAULT_SOLICITANTE', 'Não informado'),
+    'solicitacao_cliente': os.getenv('DEFAULT_SOLICITACAO', 'Sem relato'),
+    'descricao_atendimento': os.getenv('DEFAULT_DESCRICAO', 'Sem descrição'),
+    'status_atendimento': os.getenv('DEFAULT_STATUS', 'Pendente'),
+    'tipo_atendimento': os.getenv('DEFAULT_TIPO', 'Não categorizado'),
+    'sistema': os.getenv('DEFAULT_SISTEMA', 'Não especificado'),
+    'canal_atendimento': os.getenv('DEFAULT_CANAL', 'Não especificado')
 }
 
 # Configuração completa dos campos
@@ -57,7 +62,7 @@ CAMPOS_CONFIGURACAO = {
         "nome_interno": "data_hora",
         "tipo": "datetime",
         "obrigatorio": True,
-        "formato": "%d/%m/%Y %H:%M:%S",
+        "formato": os.getenv('DATE_FORMAT', "%d/%m/%Y %H:%M:%S"),
         "valor_default": VALORES_DEFAULT['data_hora'],
         "permite_filtro": True,
         "tipo_filtro": "date",
@@ -118,7 +123,7 @@ CAMPOS_CONFIGURACAO = {
         "tipo": "string",
         "obrigatorio": True,
         "valor_default": VALORES_DEFAULT['status_atendimento'],
-        "valores_permitidos": ["Concluído", "Pendente", "Cancelado", "Em Andamento"],
+        "valores_permitidos": os.getenv('STATUS_PERMITIDOS', "Concluído,Pendente,Cancelado,Em Andamento").split(','),
         "permite_filtro": True,
         "tipo_filtro": "select",
         "label": "Status",
