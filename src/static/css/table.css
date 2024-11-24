@@ -5,6 +5,7 @@
     box-shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
     margin-bottom: 1.5rem;
     overflow: hidden;
+    -webkit-overflow-scrolling: touch;
 }
 
 .table-header {
@@ -14,18 +15,25 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .table-container {
     overflow-x: auto;
     margin: 0;
     padding: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    max-height: 80vh;
 }
 
 .table {
     width: 100%;
     margin-bottom: 0;
     font-size: 0.875rem;
+    border-collapse: collapse;
 }
 
 .table th {
@@ -37,7 +45,7 @@
     border: none;
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 2;
 }
 
 .table td {
@@ -48,6 +56,7 @@
 
 .table tbody tr {
     transition: all 0.2s;
+    touch-action: pan-y pinch-zoom;
 }
 
 .table tbody tr:hover {
@@ -64,6 +73,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     white-space: nowrap;
+    display: inline-block;
 }
 
 .status-concluido {
@@ -81,6 +91,11 @@
     color: #e74a3b;
 }
 
+.status-em-andamento {
+    background-color: rgba(54, 185, 204, 0.1);
+    color: #36b9cc;
+}
+
 /* Descrição expandível */
 .description-cell {
     max-width: 400px;
@@ -92,6 +107,7 @@
     max-height: 3.6em;
     overflow: hidden;
     line-height: 1.2em;
+    transition: max-height 0.3s ease;
 }
 
 .description-content.expanded {
@@ -108,6 +124,8 @@
     cursor: pointer;
     font-size: 0.75rem;
     font-weight: 600;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* Tempo de atendimento */
@@ -148,13 +166,85 @@
     color: #858796;
 }
 
+/* Empty State */
+.table tbody tr.empty-state td {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--secondary-color);
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
     .table-container {
-        margin: 0 -1rem;
+        margin: 0;
+        padding: 0;
+        max-height: 70vh;
+    }
+    
+    .table {
+        font-size: 0.8rem;
+    }
+
+    .table th,
+    .table td {
+        padding: 0.75rem 0.5rem;
     }
     
     .description-cell {
         max-width: 250px;
+    }
+
+    .table-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.75rem;
+    }
+
+    .entity-cell {
+        min-width: 120px;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.7rem;
+    }
+
+    /* Ajustes para scroll horizontal */
+    .table-container::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .table-container::-webkit-scrollbar-thumb {
+        background: var(--primary-color);
+        border-radius: 2px;
+    }
+}
+
+/* Touch Device Optimizations */
+@supports (-webkit-touch-callout: none) {
+    .table-container {
+        -webkit-overflow-scrolling: touch;
+        overflow-y: scroll;
+        overscroll-behavior-y: contain;
+    }
+
+    .table-section {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+
+    .description-toggle {
+        padding: 0.5rem;
+    }
+}
+
+/* Landscape Mode */
+@media (max-width: 768px) and (orientation: landscape) {
+    .table-container {
+        max-height: 60vh;
     }
 }

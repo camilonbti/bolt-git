@@ -3,52 +3,31 @@ class DashboardManager {
         console.info('Inicializando DashboardManager');
         this.timezone = 'America/Sao_Paulo';
         this.initialized = false;
+        this.filteredData = null;
         this.initializeComponents();
     }
 
     async initializeComponents() {
         try {
-            // Inicializa gerenciador de dados primeiro
             this.dataManager = new DashboardDataManager();
-            
-            // Aguarda o carregamento inicial dos dados
             const initialData = await this.dataManager.loadInitialData();
             
             if (!initialData) {
                 throw new Error('Falha ao carregar dados iniciais');
             }
 
-            // Aguarda o DOM estar pronto
             await this.waitForDOM();
             
-            // Inicializa componentes visuais
             this.chartManager = new ChartManager(initialData.graficos);
             this.tableManager = new TableManager();
             this.filterManager = new FilterManager();
             this.updater = new DashboardUpdater();
             
-            // Configura listeners de eventos
             this.setupEventListeners();
-            
-            // Marca como inicializado
             this.initialized = true;
             
-            console.debug('Componentes inicializados com sucesso');
-            
-            // Aplica o filtro inicial antes de atualizar o dashboard
-            console.debug('Aplicando filtro inicial aos dados');
             const initialFilters = this.filterManager.getActiveFilters();
-            const filteredData = this.applyFilters(initialData.registros, initialFilters);
-            
-            // Atualiza dashboard com dados filtrados
-            const updatedData = {
-                registros: filteredData,
-                kpis: this.calculateKPIs(filteredData),
-                graficos: this.calculateCharts(filteredData),
-                ultima_atualizacao: Date.now()
-            };
-            
-            this.updateDashboard(updatedData);
+            this.applyFiltersOnce(initialData.registros, initialFilters);
             
         } catch (error) {
             console.error('Erro ao inicializar componentes:', error);
@@ -68,20 +47,18 @@ class DashboardManager {
 
     setupEventListeners() {
         document.addEventListener('dashboardUpdate', (event) => {
-            console.debug('Evento de atualização recebido');
             if (event.detail) {
-                this.updateDashboard(event.detail);
+                const filters = this.filterManager.getActiveFilters();
+                this.applyFiltersOnce(event.detail.registros, filters);
             }
         });
 
         document.addEventListener('filterChange', (event) => {
-            console.debug('Evento de filtro recebido:', event.detail);
-            if (event.detail) {
-                this.applyFilters(this.dataManager.data.registros, event.detail);
+            if (event.detail && this.dataManager.data.registros) {
+                this.applyFiltersOnce(this.dataManager.data.registros, event.detail);
             }
         });
 
-        // Listener para botão de atualização
         const refreshBtn = document.getElementById('refreshBtn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', async () => {
@@ -95,6 +72,49 @@ class DashboardManager {
         }
     }
 
+    applyFiltersOnce(registros, filters) {
+        if (!registros || !filters) {
+            this.updateDashboard({
+                registros: [],
+                kpis: this.calculateKPIs([]),
+                graficos: this.calculateCharts([]),
+                ultima_atualizacao: Date.now()
+            });
+            return;
+        }
+
+        try {
+            const filteredData = registros.filter(registro => {
+                return Object.entries(filters).every(([key, value]) => {
+                    if (!value || (Array.isArray(value) && value.length === 0)) {
+                        return true;
+                    }
+
+                    if (key === 'period') {
+                        return this.filterByPeriod(registro, value);
+                    }
+
+                    const fieldValue = this.getFieldValue(registro, key);
+                    return Array.isArray(value) ? value.includes(fieldValue) : value === fieldValue;
+                });
+            });
+
+            const updatedData = {
+                registros: filteredData,
+                kpis: this.calculateKPIs(filteredData),
+                graficos: this.calculateCharts(filteredData),
+                ultima_atualizacao: Date.now()
+            };
+
+            this.filteredData = filteredData;
+            this.updateDashboard(updatedData);
+
+        } catch (error) {
+            console.error('Erro ao aplicar filtros:', error);
+            this.showError('Erro ao aplicar filtros');
+        }
+    }
+
     updateDashboard(data) {
         if (!data || !this.initialized) {
             console.error('Dados inválidos ou dashboard não inicializado');
@@ -102,17 +122,14 @@ class DashboardManager {
         }
 
         try {
-            // Remove loading state e mostra conteúdo
             const loadingState = document.getElementById('loadingState');
             const dashboardContent = document.getElementById('dashboardContent');
             
             if (loadingState) loadingState.classList.add('d-none');
             if (dashboardContent) dashboardContent.classList.remove('d-none');
 
-            // Atualiza KPIs
             this.updateKPIs(data.kpis || {});
             
-            // Atualiza componentes visuais
             if (this.chartManager) {
                 this.chartManager.updateCharts(data.graficos || {});
             }
@@ -129,51 +146,6 @@ class DashboardManager {
         }
     }
 
-    applyFilters(registros, filters) {
-        if (!registros || !filters) {
-            console.warn('Dados ou filtros inválidos');
-            return registros;
-        }
-
-        try {
-            console.debug('Aplicando filtros aos dados:', filters);
-            
-            // Filtra os dados
-            const filteredData = registros.filter(registro => {
-                return Object.entries(filters).every(([key, value]) => {
-                    if (!value || (Array.isArray(value) && value.length === 0)) {
-                        return true;
-                    }
-
-                    if (key === 'period') {
-                        return this.filterByPeriod(registro, value);
-                    }
-
-                    const fieldValue = this.getFieldValue(registro, key);
-                    return Array.isArray(value) ? value.includes(fieldValue) : value === fieldValue;
-                });
-            });
-
-            console.debug(`Dados filtrados: ${filteredData.length} registros`);
-
-            // Atualiza o dashboard com os dados filtrados
-            const updatedData = {
-                registros: filteredData,
-                kpis: this.calculateKPIs(filteredData),
-                graficos: this.calculateCharts(filteredData),
-                ultima_atualizacao: Date.now()
-            };
-
-            this.updateDashboard(updatedData);
-            return filteredData;
-
-        } catch (error) {
-            console.error('Erro ao aplicar filtros:', error);
-            this.showError('Erro ao aplicar filtros');
-            return registros;
-        }
-    }
-
     filterByPeriod(registro, period) {
         if (!registro.data_hora || !period.start || !period.end) {
             return true;
@@ -183,12 +155,6 @@ class DashboardManager {
             const registroDate = new Date(parseInt(registro.data_hora));
             const startDate = new Date(period.start);
             const endDate = new Date(period.end);
-
-            console.debug('Filtrando por período:', {
-                registro: registroDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
-                inicio: startDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
-                fim: endDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
-            });
 
             return registroDate >= startDate && registroDate <= endDate;
         } catch (error) {
@@ -238,7 +204,16 @@ class DashboardManager {
 
     calculateCharts(data) {
         if (!data || data.length === 0) {
-            return {};
+            return {
+                status: { labels: [], values: [] },
+                tipo: { labels: [], values: [] },
+                funcionario: { labels: [], values: [] },
+                cliente: { labels: [], values: [] },
+                sistema: { labels: [], values: [] },
+                canal: { labels: [], values: [] },
+                relato: { labels: [], values: [] },
+                solicitacao: { labels: [], values: [] }
+            };
         }
 
         const charts = {};
@@ -282,10 +257,7 @@ class DashboardManager {
 
         try {
             Object.entries(elements).forEach(([key, element]) => {
-                if (!element) {
-                    console.warn(`Elemento ${key} não encontrado`);
-                    return;
-                }
+                if (!element) return;
 
                 let value = 0;
                 switch (key) {

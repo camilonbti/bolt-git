@@ -21,22 +21,20 @@ class ChartManager {
     }
 
     initCharts() {
-        console.debug('Inicializando gráficos com dados:', this.initialData);
-        
         const commonOptions = {
             responsive: true,
             maintainAspectRatio: false,
-            indexAxis: 'y', // Todos os gráficos serão horizontais
+            indexAxis: 'y',
             plugins: {
                 legend: {
-                    display: false // Remove legendas para melhor visualização
+                    display: false
                 },
                 tooltip: {
                     callbacks: {
                         label: (context) => {
                             const value = context.raw;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((value / total) * 100).toFixed(1);
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
                             return `${context.label}: ${value} (${percentage}%)`;
                         }
                     }
@@ -57,10 +55,9 @@ class ChartManager {
             }
         };
 
-        // Status (mantém como doughnut)
         this.createChart('status', 'doughnut', {
             ...commonOptions,
-            indexAxis: undefined, // Remove para doughnut
+            indexAxis: undefined,
             cutout: '60%',
             plugins: {
                 legend: {
@@ -70,7 +67,6 @@ class ChartManager {
             }
         }, this.colorPalette.getStatusColors());
 
-        // Demais gráficos como barras horizontais
         const barCharts = [
             'tipo',
             'funcionario',
@@ -87,8 +83,7 @@ class ChartManager {
                 plugins: {
                     ...commonOptions.plugins,
                     title: {
-                        display: true,
-                        // text: this.getChartTitle(type)
+                        display: true
                     }
                 }
             });
@@ -122,7 +117,6 @@ class ChartManager {
         const dataLength = data.labels.length;
         const colors = customColors || this.colorPalette.getChartColors(dataLength);
         
-        // Ajusta altura para gráficos horizontais
         if (chartType === 'bar') {
             const minHeight = 300;
             const heightPerItem = 30;
@@ -138,8 +132,7 @@ class ChartManager {
                     data: data.values,
                     backgroundColor: colors,
                     borderWidth: 1,
-                    borderColor: colors.map(color => this.colorPalette.adjustOpacity(color, 0.8)),
-                    // barThickness: 20
+                    borderColor: colors.map(color => this.colorPalette.adjustOpacity(color, 0.8))
                 }]
             },
             options: {
@@ -167,10 +160,10 @@ class ChartManager {
         }
 
         Object.entries(this.charts).forEach(([type, chart]) => {
-            const chartData = data[type];
-            if (!chartData || !chartData.labels || !chartData.values) {
-                console.warn(`Dados inválidos para o gráfico ${type}`);
-                return;
+            const chartData = data[type] || { labels: [], values: [] };
+            if (!chartData.labels || !chartData.values) {
+                chartData.labels = [];
+                chartData.values = [];
             }
 
             const activeFilters = window.filterManager?.getActiveFilters() || {};
@@ -189,7 +182,6 @@ class ChartManager {
                     baseColor;
             });
             
-            // Ajusta altura para gráficos horizontais
             if (chart.config.type === 'bar') {
                 const canvas = chart.canvas;
                 const minHeight = 300;

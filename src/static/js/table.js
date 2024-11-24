@@ -10,7 +10,6 @@ class TableManager {
             return;
         }
 
-        console.info('TableManager inicializado com sucesso');
         this.setupEventListeners();
     }
 
@@ -24,13 +23,11 @@ class TableManager {
         });
 
         document.addEventListener('pageChange', () => {
-            console.debug('Evento pageChange recebido');
             const data = window.dashboardManager?.dataManager?.data?.registros || [];
             this.updateTable(data);
         });
 
         document.addEventListener('dashboardUpdate', (event) => {
-            console.debug('Evento dashboardUpdate recebido');
             if (event.detail && Array.isArray(event.detail.registros)) {
                 this.updateTable(event.detail.registros);
             }
@@ -41,24 +38,16 @@ class TableManager {
         if (!data_hora_raw) return { date: 'N/A', time: '' };
         
         try {
-            // Log do valor bruto para debug
-            console.debug('Valor bruto data_hora:', data_hora_raw);
-            
-            // Converte para número se for string
             const timestamp = typeof data_hora_raw === 'string' ? 
                 parseInt(data_hora_raw, 10) : data_hora_raw;
             
-            // Verifica se é um número válido
             if (isNaN(timestamp)) {
-                console.warn('Timestamp inválido:', data_hora_raw);
                 return { date: 'Data inválida', time: '' };
             }
 
             const date = new Date(timestamp);
             
-            // Verifica se a data é válida
             if (isNaN(date.getTime())) {
-                console.warn('Data inválida para timestamp:', timestamp);
                 return { date: 'Data inválida', time: '' };
             }
 
@@ -77,10 +66,19 @@ class TableManager {
 
     updateTable(data) {
         if (!this.table || !Array.isArray(data)) {
-            console.error('Falha ao atualizar tabela:', {
-                tableExists: !!this.table,
-                dataIsArray: Array.isArray(data)
-            });
+            if (!this.table) {
+                console.error('Elemento da tabela não encontrado');
+            }
+            if (this.table) {
+                this.table.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center">
+                            Nenhum registro encontrado
+                        </td>
+                    </tr>
+                `;
+            }
+            this.updatePagination(0);
             return;
         }
         
@@ -89,7 +87,7 @@ class TableManager {
         const pageData = data.slice(start, end);
 
         try {
-            this.table.innerHTML = pageData.map(item => {
+            this.table.innerHTML = pageData.length ? pageData.map(item => {
                 const datetime = this.formatDateTime(item.data_hora);
                 const statusClass = this.getStatusClass(item.status_atendimento);
                 const descricao = item.descricao_atendimento || item.solicitacao_cliente || 'Sem descrição';
@@ -123,7 +121,13 @@ class TableManager {
                         </td>
                     </tr>
                 `;
-            }).join('');
+            }).join('') : `
+                <tr>
+                    <td colspan="8" class="text-center">
+                        Nenhum registro encontrado
+                    </td>
+                </tr>
+            `;
 
             this.updatePagination(data.length);
         } catch (error) {
@@ -154,6 +158,11 @@ class TableManager {
 
     updatePagination(totalItems) {
         if (!this.pagination) return;
+
+        if (totalItems === 0) {
+            this.pagination.innerHTML = '';
+            return;
+        }
 
         const totalPages = Math.ceil(totalItems / this.itemsPerPage);
         const pages = this.getPaginationRange(this.currentPage, totalPages);

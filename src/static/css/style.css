@@ -19,11 +19,20 @@ body {
     background-color: var(--light-bg);
     color: var(--dark-bg);
     line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
 /* Layout */
 .container-fluid {
     padding: 1.5rem;
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Cards */
@@ -32,6 +41,9 @@ body {
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     transition: transform var(--transition-speed);
+    touch-action: pan-y pinch-zoom;
+    overflow: hidden;
+    -webkit-overflow-scrolling: touch;
 }
 
 .card:hover {
@@ -45,6 +57,7 @@ body {
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
     transition: transform var(--transition-speed);
+    touch-action: manipulation;
 }
 
 .kpi-card:hover {
@@ -69,6 +82,13 @@ body {
 /* Buttons */
 .btn {
     transition: all var(--transition-speed);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px;
+    padding: 0.5rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-primary {
@@ -127,14 +147,49 @@ body {
     color: white;
 }
 
-/* Responsiveness */
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+/* Touch Device Optimizations */
+@supports (-webkit-touch-callout: none) {
+    .card, .kpi-card {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .btn, .card, .kpi-card {
+        cursor: pointer;
+    }
+}
+
+/* Mobile Optimizations */
 @media (max-width: 768px) {
+    :root {
+        --border-radius: 0.25rem;
+    }
+
+    body {
+        font-size: 14px;
+    }
+
     .container-fluid {
         padding: 1rem;
     }
     
     .kpi-card {
         margin-bottom: 1rem;
+        padding: 1rem;
     }
     
     .kpi-card p {
@@ -144,5 +199,97 @@ body {
     .btn {
         width: 100%;
         margin-top: 0.5rem;
+        min-height: 48px;
+    }
+
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    .row {
+        margin-left: -0.5rem;
+        margin-right: -0.5rem;
+    }
+
+    .col, [class*="col-"] {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    /* Improved touch targets */
+    .btn, 
+    .form-control,
+    .nav-link,
+    .dropdown-item {
+        min-height: 44px;
+        padding: 0.75rem 1rem;
+    }
+
+    /* Better scrolling on iOS */
+    .table-responsive,
+    .chart-container,
+    .card-body {
+        -webkit-overflow-scrolling: touch;
+        overflow-y: auto;
+    }
+
+    /* Prevent elastic scrolling */
+    html, body {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .container-fluid {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* Landscape Mode */
+@media (max-width: 768px) and (orientation: landscape) {
+    .kpi-card {
+        margin-bottom: 0.5rem;
+    }
+
+    .row {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -0.25rem;
+    }
+
+    .col, [class*="col-"] {
+        flex: 0 0 auto;
+        width: auto;
+        padding: 0 0.25rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --light-bg: #1a1a1a;
+        --dark-bg: #ffffff;
+    }
+
+    body {
+        background-color: var(--light-bg);
+        color: var(--dark-bg);
+    }
+
+    .card,
+    .kpi-card {
+        background: #2d2d2d;
+    }
+
+    .alert {
+        background-color: #2d2d2d;
     }
 }
