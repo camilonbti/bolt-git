@@ -34,6 +34,11 @@ MAPEAMENTO_COLUNAS = {
     'Prestador de Serviços:': 'funcionario',
     'Empresa atendida:': 'cliente',
     'Nome do solicitante:': 'solicitante',
+    'Relato mais detalhado do pedido do cliente1:': 'relato_detalhado_1',
+    'Relato mais detalhado do pedido do cliente2:': 'relato_detalhado_2',
+    'Relato mais detalhado do pedido do cliente3:': 'relato_detalhado_3',
+    'Relato mais detalhado do pedido do cliente4:': 'relato_detalhado_4',
+    'Relato mais detalhado do pedido do cliente5:': 'relato_detalhado_5',
     'Relato do pedido de atendimento:': 'solicitacao_cliente',
     'Descrição do atendimento realizado:': 'descricao_atendimento',
     'Status do atendimento:': 'status_atendimento',
@@ -48,6 +53,11 @@ VALORES_DEFAULT = {
     'funcionario': os.getenv('DEFAULT_FUNCIONARIO', 'Não informado'),
     'cliente': os.getenv('DEFAULT_CLIENTE', 'Não informado'),
     'solicitante': os.getenv('DEFAULT_SOLICITANTE', 'Não informado'),
+    'relato_detalhado_1': '',
+    'relato_detalhado_2': '',
+    'relato_detalhado_3': '',
+    'relato_detalhado_4': '',
+    'relato_detalhado_5': '',
     'solicitacao_cliente': os.getenv('DEFAULT_SOLICITACAO', 'Sem relato'),
     'descricao_atendimento': os.getenv('DEFAULT_DESCRICAO', 'Sem descrição'),
     'status_atendimento': os.getenv('DEFAULT_STATUS', 'Pendente'),
@@ -99,6 +109,51 @@ CAMPOS_CONFIGURACAO = {
         "label": "Solicitante",
         "visivel": True
     },
+    "Relato mais detalhado do pedido do cliente1:": {
+        "nome_interno": "relato_detalhado_1",
+        "tipo": "string",
+        "obrigatorio": False,
+        "valor_default": VALORES_DEFAULT['relato_detalhado_1'],
+        "permite_filtro": False,
+        "visivel": False,
+        "concatenar": True
+    },
+    "Relato mais detalhado do pedido do cliente2:": {
+        "nome_interno": "relato_detalhado_2",
+        "tipo": "string",
+        "obrigatorio": False,
+        "valor_default": VALORES_DEFAULT['relato_detalhado_2'],
+        "permite_filtro": False,
+        "visivel": False,
+        "concatenar": True
+    },
+    "Relato mais detalhado do pedido do cliente3:": {
+        "nome_interno": "relato_detalhado_3",
+        "tipo": "string",
+        "obrigatorio": False,
+        "valor_default": VALORES_DEFAULT['relato_detalhado_3'],
+        "permite_filtro": False,
+        "visivel": False,
+        "concatenar": True
+    },
+    "Relato mais detalhado do pedido do cliente4:": {
+        "nome_interno": "relato_detalhado_4",
+        "tipo": "string",
+        "obrigatorio": False,
+        "valor_default": VALORES_DEFAULT['relato_detalhado_4'],
+        "permite_filtro": False,
+        "visivel": False,
+        "concatenar": True
+    },
+    "Relato mais detalhado do pedido do cliente5:": {
+        "nome_interno": "relato_detalhado_5",
+        "tipo": "string",
+        "obrigatorio": False,
+        "valor_default": VALORES_DEFAULT['relato_detalhado_5'],
+        "permite_filtro": False,
+        "visivel": False,
+        "concatenar": True
+    },
     "Relato do pedido de atendimento:": {
         "nome_interno": "solicitacao_cliente",
         "tipo": "string",
@@ -107,7 +162,8 @@ CAMPOS_CONFIGURACAO = {
         "permite_filtro": True,
         "tipo_filtro": "select",
         "label": "Relato",
-        "visivel": True
+        "visivel": True,
+        "campos_concatenados": ["relato_detalhado_1", "relato_detalhado_2", "relato_detalhado_3", "relato_detalhado_4", "relato_detalhado_5"]
     },
     "Descrição do atendimento realizado:": {
         "nome_interno": "descricao_atendimento",

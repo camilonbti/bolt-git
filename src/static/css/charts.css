@@ -6,8 +6,6 @@
     box-shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
     height: 100%;
     transition: transform 0.2s ease;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y pinch-zoom;
 }
 
 .chart-card:hover {
@@ -24,23 +22,17 @@
     text-overflow: ellipsis;
 }
 
-.chart-container-father {
+.chart-container-father{
     position: relative;
     height: 300px;
     width: 100%;
-    overflow: hidden;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y pinch-zoom;
+    overflow: auto;
 }
-
 .chart-container {
     position: relative;
     min-height: 300px;
     width: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y pinch-zoom;
+    overflow: hidden;
 }
 
 .chart-container:hover {
@@ -76,29 +68,16 @@
 
 .chart-container canvas {
     animation: chartFadeIn 0.5s ease-out;
-    touch-action: pan-y pinch-zoom;
 }
 
 /* Responsividade */
 @media (max-width: 768px) {
-    .chart-container-father {
-        height: auto;
-        min-height: 250px;
-        max-height: 80vh;
-    }
-    
     .chart-container {
-        min-height: 250px;
-        height: auto;
+        height: 250px;
     }
     
     .chart-card {
         margin-bottom: 1rem;
-        padding: 1rem;
-    }
-
-    .chart-card h5 {
-        font-size: 0.9rem;
     }
 }
 
@@ -111,7 +90,6 @@
     font-size: 12px;
     pointer-events: none;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    z-index: 1000;
 }
 
 /* Scrollbar personalizada para legendas */
@@ -120,7 +98,6 @@
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--primary-color) var(--light-bg);
-    -webkit-overflow-scrolling: touch;
 }
 
 .chart-legend-scroll::-webkit-scrollbar {
@@ -143,63 +120,4 @@
 
 .chart-container:hover canvas {
     filter: brightness(0.98);
-}
-
-/* Touch Device Optimizations */
-@supports (-webkit-touch-callout: none) {
-    .chart-container,
-    .chart-container-father {
-        -webkit-overflow-scrolling: touch;
-        overflow-y: scroll;
-        overscroll-behavior-y: contain;
-    }
-
-    .chart-card {
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
-    }
-
-    .chart-container canvas {
-        touch-action: pan-y pinch-zoom;
-        -webkit-user-select: none;
-        user-select: none;
-    }
-}
-
-/* Landscape Mode */
-@media (max-width: 768px) and (orientation: landscape) {
-    .chart-container-father {
-        height: 200px;
-        min-height: 200px;
-    }
-
-    .chart-container {
-        min-height: 200px;
-    }
-
-    .chart-card {
-        margin-bottom: 0.5rem;
-    }
-}
-
-/* Empty State */
-.chart-empty-state {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    color: var(--secondary-color);
-    width: 100%;
-    padding: 1rem;
-}
-
-.chart-empty-state i {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-}
-
-.chart-empty-state p {
-    margin: 0;
-    font-size: 0.9rem;
 }

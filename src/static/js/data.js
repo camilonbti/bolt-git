@@ -42,24 +42,13 @@ class DashboardDataManager {
                 throw new Error('Dados inválidos recebidos do servidor');
             }
 
+            // Processa timestamps
             data.registros = data.registros.map(registro => ({
                 ...registro,
                 data_hora: this.processTimestamp(registro.data_hora)
             }));
 
-            this.data = {
-                ...data,
-                graficos: data.graficos || {
-                    status: { labels: [], values: [] },
-                    tipo: { labels: [], values: [] },
-                    funcionario: { labels: [], values: [] },
-                    cliente: { labels: [], values: [] },
-                    sistema: { labels: [], values: [] },
-                    canal: { labels: [], values: [] },
-                    relato: { labels: [], values: [] },
-                    solicitacao: { labels: [], values: [] }
-                }
-            };
+            this.data = data;
             
             if (loadingState) loadingState.classList.add('d-none');
             if (dashboardContent) dashboardContent.classList.remove('d-none');
@@ -77,10 +66,12 @@ class DashboardDataManager {
         if (!timestamp) return null;
         
         try {
+            // Se já for número, retorna
             if (typeof timestamp === 'number') {
                 return timestamp;
             }
             
+            // Se for string de data BR, converte
             if (typeof timestamp === 'string' && timestamp.includes('/')) {
                 const [date, time] = timestamp.split(' ');
                 const [day, month, year] = date.split('/');
@@ -90,6 +81,7 @@ class DashboardDataManager {
                 return dateObj.getTime();
             }
             
+            // Tenta converter diretamente
             const dateObj = new Date(timestamp);
             if (!isNaN(dateObj.getTime())) {
                 return dateObj.getTime();
@@ -121,24 +113,11 @@ class DashboardDataManager {
             return;
         }
 
+        // Processa timestamps dos novos dados
         newData.registros = newData.registros.map(registro => ({
             ...registro,
             data_hora: this.processTimestamp(registro.data_hora)
         }));
-
-        // Garante que todos os gráficos existam mesmo com dados vazios
-        if (!newData.graficos) {
-            newData.graficos = {
-                status: { labels: [], values: [] },
-                tipo: { labels: [], values: [] },
-                funcionario: { labels: [], values: [] },
-                cliente: { labels: [], values: [] },
-                sistema: { labels: [], values: [] },
-                canal: { labels: [], values: [] },
-                relato: { labels: [], values: [] },
-                solicitacao: { labels: [], values: [] }
-            };
-        }
 
         this.data = newData;
         document.dispatchEvent(new CustomEvent('dashboardUpdate', { 

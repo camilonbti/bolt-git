@@ -4,8 +4,8 @@ class ChartManager {
         this.charts = {};
         this.colorPalette = new ColorPaletteManager();
         this.initialData = initialData || {};
-        this.initCharts();
         this.setupEventListeners();
+        this.initCharts();
     }
 
     setupEventListeners() {
@@ -74,7 +74,8 @@ class ChartManager {
             'sistema',
             'canal',
             'relato',
-            'solicitacao'
+            'solicitacao',
+            'relatosDetalhados'
         ];
 
         barCharts.forEach(type => {
@@ -98,7 +99,8 @@ class ChartManager {
             sistema: 'Sistemas',
             canal: 'Canais de Atendimento',
             relato: 'Relatos de Atendimento',
-            solicitacao: 'Tipos de Solicitação'
+            solicitacao: 'Tipos de Solicitação',
+            relatosDetalhados: 'Relatos Detalhados'
         };
         return titles[type] || type;
     }
@@ -160,6 +162,11 @@ class ChartManager {
         }
 
         Object.entries(this.charts).forEach(([type, chart]) => {
+            if (!chart) {
+                console.warn(`Gráfico ${type} não inicializado`);
+                return;
+            }
+
             const chartData = data[type] || { labels: [], values: [] };
             if (!chartData.labels || !chartData.values) {
                 chartData.labels = [];

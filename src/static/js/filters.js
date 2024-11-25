@@ -3,8 +3,6 @@ class FilterManager {
         console.info('Inicializando FilterManager');
         this.filters = new Map();
         this.filterContainer = document.getElementById('activeFilters');
-        this.filterCache = new Map();
-        this.lastFilterHash = '';
         
         // Inicializa as constantes de data e hora com timezone São Paulo
         const today = new Date();
@@ -19,6 +17,11 @@ class FilterManager {
         this.data_ini.setHours(0, 0, 0, 0);
         this.data_fim.setHours(23, 59, 59, 999);
 
+        console.debug('Datas inicializadas:', {
+            dataInicial: this.data_ini.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+            dataFinal: this.data_fim.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+        });
+        
         if (!this.filterContainer) {
             console.error('Elemento activeFilters não encontrado');
             return;
@@ -30,6 +33,7 @@ class FilterManager {
 
     setupEventListeners() {
         document.addEventListener('chartClick', (event) => {
+            console.debug('Clique no gráfico:', event.detail);
             this.toggleFilter(event.detail.type, event.detail.value);
         });
 
@@ -41,30 +45,23 @@ class FilterManager {
             endDateInput.addEventListener('change', () => this.handleDateChange());
         }
 
+        // Escuta o evento de dados carregados
         document.addEventListener('dashboardUpdate', (event) => {
             if (event.detail && event.detail.registros) {
+                console.debug('Dados atualizados, total de registros:', event.detail.registros.length);
+                // Aplica filtros aos novos dados
                 this.applyInitialPeriodFilter();
             }
         });
     }
 
-    generateFilterHash(filters) {
-        const sortedFilters = Object.entries(filters)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([key, value]) => `${key}:${JSON.stringify(value)}`)
-            .join('|');
-        return btoa(sortedFilters);
-    }
-
     applyInitialPeriodFilter() {
+        console.debug('Aplicando filtro de período inicial');
+        
         const filters = this.getActiveFilters();
-        const filterHash = this.generateFilterHash(filters);
-
-        if (filterHash === this.lastFilterHash) {
-            return;
-        }
-
-        this.lastFilterHash = filterHash;
+        console.debug('Filtros ativos:', filters);
+        
+        // Força a atualização da UI e notifica a mudança
         this.updateUI();
         this.notifyFilterChange();
     }
@@ -79,24 +76,27 @@ class FilterManager {
         }
 
         try {
+            console.debug('Valores dos inputs:', {
+                startDate: startDateInput.value,
+                endDate: endDateInput.value
+            });
+
+            // Atualiza as datas mantendo o timezone de São Paulo
             const startDate = new Date(startDateInput.value + 'T00:00:00-03:00');
             const endDate = new Date(endDateInput.value + 'T23:59:59-03:00');
             
             this.data_ini = startDate;
             this.data_fim = endDate;
 
+            console.debug('Datas atualizadas:', {
+                dataInicial: this.data_ini.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+                dataFinal: this.data_fim.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+            });
+
             if (!this.validateDates()) {
                 return;
             }
 
-            const filters = this.getActiveFilters();
-            const filterHash = this.generateFilterHash(filters);
-
-            if (filterHash === this.lastFilterHash) {
-                return;
-            }
-
-            this.lastFilterHash = filterHash;
             this.updateUI();
             this.notifyFilterChange();
         } catch (error) {
@@ -110,6 +110,12 @@ class FilterManager {
             const now = new Date();
             const today = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
             today.setHours(23, 59, 59, 999);
+
+            console.debug('Validando datas:', {
+                dataInicial: this.data_ini.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+                dataFinal: this.data_fim.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+                hoje: today.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+            });
 
             if (isNaN(this.data_ini.getTime()) || isNaN(this.data_fim.getTime())) {
                 this.showError('Data inválida');
@@ -143,9 +149,16 @@ class FilterManager {
                 return;
             }
             
+            // Formata as datas para o input
             startDateInput.value = this.formatDateForInput(this.data_ini);
             endDateInput.value = this.formatDateForInput(this.data_fim);
             
+            console.debug('Campos de data inicializados:', {
+                dataInicial: startDateInput.value,
+                dataFinal: endDateInput.value
+            });
+
+            // Aplica o filtro inicial
             this.applyInitialPeriodFilter();
         } catch (error) {
             console.error('Erro ao inicializar campos de data:', error);
@@ -166,6 +179,9 @@ class FilterManager {
     }
 
     toggleFilter(type, value) {
+        console.debug('Toggle filter:', { type, value });
+
+        // Período é sempre obrigatório e não pode ser removido
         if (type === 'period') return;
 
         if (!this.filters.has(type)) {
@@ -183,14 +199,8 @@ class FilterManager {
             this.filters.delete(type);
         }
 
-        const filters = this.getActiveFilters();
-        const filterHash = this.generateFilterHash(filters);
+        console.debug('Filtros após toggle:', this.getActiveFilters());
 
-        if (filterHash === this.lastFilterHash) {
-            return;
-        }
-
-        this.lastFilterHash = filterHash;
         this.updateUI();
         this.notifyFilterChange();
     }
@@ -201,6 +211,7 @@ class FilterManager {
         this.filterContainer.innerHTML = '';
         let totalFiltros = 0;
         
+        // Sempre mostra o filtro de período
         const periodFilter = this.createPeriodFilterItem();
         this.filterContainer.appendChild(periodFilter);
         totalFiltros++;
@@ -213,13 +224,15 @@ class FilterManager {
             });
         });
 
-        if (totalFiltros > 1) {
+        if (totalFiltros > 1) { // > 1 porque o período sempre está presente
             const clearBtn = document.createElement('button');
             clearBtn.className = 'btn btn-sm btn-outline-secondary ms-2';
             clearBtn.innerHTML = '<i class="fas fa-times me-1"></i>Limpar Filtros';
             clearBtn.onclick = () => this.clearFilters();
             this.filterContainer.appendChild(clearBtn);
         }
+
+        console.debug('UI atualizada, total de filtros:', totalFiltros);
     }
 
     createPeriodFilterItem() {
@@ -264,12 +277,14 @@ class FilterManager {
             sistema: 'Sistema',
             canal: 'Canal',
             relato: 'Relato',
-            solicitacao: 'Solicitação'
+            solicitacao: 'Solicitação',
+            relatosDetalhados: 'Relatos Detalhados' // Adicionado o novo label
         };
         return labels[type] || type;
     }
 
     getActiveFilters() {
+        // Sempre inclui o período nos filtros ativos
         const activeFilters = {
             period: {
                 start: this.data_ini.getTime(),
@@ -283,11 +298,13 @@ class FilterManager {
             }
         });
 
+        console.debug('Filtros ativos:', activeFilters);
         return activeFilters;
     }
 
     notifyFilterChange() {
         const filters = this.getActiveFilters();
+        console.debug('Notificando mudança de filtros:', filters);
         
         document.dispatchEvent(new CustomEvent('filterChange', {
             detail: filters
@@ -310,15 +327,8 @@ class FilterManager {
     }
 
     clearFilters() {
+        console.debug('Limpando filtros (exceto período)');
         this.filters.clear();
-        const filters = this.getActiveFilters();
-        const filterHash = this.generateFilterHash(filters);
-
-        if (filterHash === this.lastFilterHash) {
-            return;
-        }
-
-        this.lastFilterHash = filterHash;
         this.updateUI();
         this.notifyFilterChange();
     }

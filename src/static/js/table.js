@@ -4,6 +4,7 @@ class TableManager {
         this.pagination = document.getElementById('pagination');
         this.itemsPerPage = 10;
         this.currentPage = 1;
+        this.filteredData = [];
         
         if (!this.table) {
             console.error('Elemento da tabela não encontrado. ID esperado: tableBody');
@@ -23,13 +24,14 @@ class TableManager {
         });
 
         document.addEventListener('pageChange', () => {
-            const data = window.dashboardManager?.dataManager?.data?.registros || [];
-            this.updateTable(data);
+            // Usa os dados filtrados armazenados ao invés de buscar novos dados
+            this.updateTable(this.filteredData);
         });
 
         document.addEventListener('dashboardUpdate', (event) => {
             if (event.detail && Array.isArray(event.detail.registros)) {
-                this.updateTable(event.detail.registros);
+                this.filteredData = event.detail.registros;
+                this.updateTable(this.filteredData);
             }
         });
     }
@@ -81,6 +83,9 @@ class TableManager {
             this.updatePagination(0);
             return;
         }
+        
+        // Armazena os dados filtrados
+        this.filteredData = data;
         
         const start = (this.currentPage - 1) * this.itemsPerPage;
         const end = start + this.itemsPerPage;

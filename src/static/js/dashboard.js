@@ -18,9 +18,9 @@ class DashboardManager {
 
             await this.waitForDOM();
             
-            this.chartManager = new ChartManager(initialData.graficos);
-            this.tableManager = new TableManager();
             this.filterManager = new FilterManager();
+            this.tableManager = new TableManager();
+            this.chartManager = new ChartManager(initialData.graficos);
             this.updater = new DashboardUpdater();
             
             this.setupEventListeners();
@@ -130,12 +130,12 @@ class DashboardManager {
 
             this.updateKPIs(data.kpis || {});
             
-            if (this.chartManager) {
-                this.chartManager.updateCharts(data.graficos || {});
-            }
-            
             if (this.tableManager) {
                 this.tableManager.updateTable(data.registros || []);
+            }
+            
+            if (this.chartManager) {
+                this.chartManager.updateCharts(data.graficos || {});
             }
             
             this.updateTimestamp(data.ultima_atualizacao);
@@ -172,9 +172,10 @@ class DashboardManager {
             'sistema': 'sistema',
             'canal': 'canal_atendimento',
             'relato': 'solicitacao_cliente',
-            'solicitacao': 'tipo_atendimento'
+            'solicitacao': 'tipo_atendimento',
+            'relatosDetalhados': 'solicitacao_cliente' // Novo campo
         };
-
+    
         const fieldName = fieldMappings[key] || key;
         return registro[fieldName] || '';
     }
@@ -212,10 +213,11 @@ class DashboardManager {
                 sistema: { labels: [], values: [] },
                 canal: { labels: [], values: [] },
                 relato: { labels: [], values: [] },
-                solicitacao: { labels: [], values: [] }
+                solicitacao: { labels: [], values: [] },
+                relatosDetalhados: { labels: [], values: [] } // Novo gráfico
             };
         }
-
+    
         const charts = {};
         const fields = {
             status: 'status_atendimento',
@@ -225,7 +227,8 @@ class DashboardManager {
             sistema: 'sistema',
             canal: 'canal_atendimento',
             relato: 'solicitacao_cliente',
-            solicitacao: 'tipo_atendimento'
+            solicitacao: 'tipo_atendimento',
+            relatosDetalhados: 'solicitacao_cliente' // Novo campo
         };
 
         Object.entries(fields).forEach(([chartName, fieldName]) => {

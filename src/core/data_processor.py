@@ -58,6 +58,9 @@ class ProcessadorDados:
             # Aplica valores default e validações para cada campo
             df = self._processar_campos(df)
             
+            # Concatena os campos de relato após processar os campos
+            df = self._concatenar_campos_relato(df)
+            
             # Debug: Mostrar dados após processar campos
             if 'data_hora' in df.columns:
                 logger.debug("Valores de data_hora após processar campos:")
@@ -89,6 +92,33 @@ class ProcessadorDados:
         except Exception as e:
             logger.error(f"Erro ao processar dados: {str(e)}", exc_info=True)
             return self._get_estrutura_vazia()
+
+    def _concatenar_campos_relato(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Concatena os campos de relato detalhado em um único campo."""
+        try:
+            campos_relato = [
+                'relato_detalhado_1', 'relato_detalhado_2', 'relato_detalhado_3',
+                'relato_detalhado_4', 'relato_detalhado_5'
+            ]
+        
+            def concatenar_relatos(row):
+                relatos = []
+                for campo in campos_relato:
+                    if pd.notna(row.get(campo)) and str(row.get(campo)).strip():
+                        relatos.append(str(row.get(campo)).strip())
+                return "\n".join(relatos) if relatos else row.get('solicitacao_cliente', '')
+        
+            # Aplica a concatenação apenas se os campos existirem
+            if all(campo in df.columns for campo in campos_relato):
+                df['solicitacao_cliente'] = df.apply(concatenar_relatos, axis=1)
+                df = df.drop(columns=campos_relato)
+        
+            return df
+        
+        except Exception as e:
+            logger.error(f"Erro ao concatenar campos de relato: {str(e)}")
+            return df
+
 
     def _processar_campos(self, df: pd.DataFrame) -> pd.DataFrame:
         """Processa todos os campos aplicando valores default e validações."""
@@ -229,15 +259,31 @@ class ProcessadorDados:
                 'canal': self._contar_por_coluna(df, 'canal_atendimento'),
                 'timeline': self._gerar_timeline(df),
                 'relato': self._contar_por_coluna(df, 'solicitacao_cliente'),
-                'solicitacao': self._contar_por_coluna(df, 'tipo_atendimento')
+                'solicitacao': self._contar_por_coluna(df, 'tipo_atendimento'),
+                'relatosDetalhados': self._contar_por_coluna(df, 'solicitacao_cliente')
             }
-            
+        
             logger.debug("Dados dos gráficos gerados com sucesso")
             return graficos
-            
+        
         except Exception as e:
             logger.error(f"Erro ao gerar dados dos gráficos: {str(e)}")
             return self._get_graficos_vazios()
+
+    def _get_graficos_vazios(self) -> Dict[str, List]:
+        """Retorna estrutura vazia de gráficos."""
+        return {
+            'status': {'labels': [], 'values': []},
+            'tipo': {'labels': [], 'values': []},
+            'funcionario': {'labels': [], 'values': []},
+            'cliente': {'labels': [], 'values': []},
+            'sistema': {'labels': [], 'values': []},
+            'canal': {'labels': [], 'values': []},
+            'timeline': {'labels': [], 'values': []},
+            'relato': {'labels': [], 'values': []},
+            'solicitacao': {'labels': [], 'values': []},
+            'relatosDetalhados': {'labels': [], 'values': []}
+        }
 
     def _contar_por_coluna(self, df: pd.DataFrame, coluna: str) -> Dict[str, List]:
         """Conta ocorrências em uma coluna."""
