@@ -55,17 +55,15 @@ class ChartManager {
             }
         };
 
-        this.createChart('status', 'doughnut', {
+        // Alterado de 'doughnut' para 'bar'
+        this.createChart('status', 'bar', {
             ...commonOptions,
-            indexAxis: undefined,
-            cutout: '60%',
             plugins: {
                 legend: {
-                    display: true,
-                    position: 'right'
+                    display: false
                 }
             }
-        }, this.colorPalette.getStatusColors());
+        });
 
         const barCharts = [
             'tipo',
