@@ -119,13 +119,9 @@ class ChartManager {
         const dataLength = data.labels.length;
         const colors = customColors || this.colorPalette.getChartColors(dataLength);
         
-        if (chartType === 'bar') {
-            const minHeight = 300;
-            const heightPerItem = 30;
-            const calculatedHeight = Math.max(minHeight, dataLength * heightPerItem);
-            canvas.style.height = `${calculatedHeight}px`;
-        }
-    
+        // Usa o gerenciador de dimensões
+        const dimensions = window.chartDimensionsManager.getChartConfig(dataLength, chartType);
+        
         const chart = new Chart(ctx, {
             type: chartType,
             data: {
@@ -139,6 +135,7 @@ class ChartManager {
             },
             options: {
                 ...options,
+                ...dimensions,
                 onClick: (event, elements) => {
                     if (elements.length > 0) {
                         const index = elements[0].index;
@@ -154,7 +151,7 @@ class ChartManager {
         this.charts[type] = chart;
         return chart;
     }
-    
+
     updateCharts(data) {
         if (!data) {
             console.error('Dados inválidos para atualização dos gráficos');
@@ -189,13 +186,8 @@ class ChartManager {
                     baseColor;
             });
             
-            if (chart.config.type === 'bar') {
-                const canvas = chart.canvas;
-                const minHeight = 300;
-                const heightPerItem = 30;
-                const calculatedHeight = Math.max(minHeight, chartData.labels.length * heightPerItem);
-                canvas.style.height = `${calculatedHeight}px`;
-            }
+            // Atualiza dimensões usando o gerenciador
+            window.chartDimensionsManager.updateChartDimensions(chart, dataLength);
             
             chart.update('none');
         });
@@ -204,7 +196,8 @@ class ChartManager {
     resizeCharts() {
         Object.values(this.charts).forEach(chart => {
             if (chart) {
-                chart.resize();
+                const dataLength = chart.data.labels.length;
+                window.chartDimensionsManager.updateChartDimensions(chart, dataLength);
             }
         });
     }
