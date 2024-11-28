@@ -12,19 +12,79 @@ class ChartDimensionsManager {
         };
 
         // Configurações específicas para cada quantidade de barras
-        this.barConfigs = {
-            1: { barHeight: 120, spacing: 0.95 },  // Uma barra única e larga
-            2: { barHeight: 100, spacing: 0.95 },  // Duas barras bem espaçadas
-            3: { barHeight: 60, spacing: 0.95 },   // Três barras (caso ideal visto nos logs)
-            4: { barHeight: 50, spacing: 0.90 },   // Quatro barras
-            5: { barHeight: 42, spacing: 0.90 },   // Cinco barras
-            6: { barHeight: 43, spacing: 0.85 },   // Seis barras
-            7: { barHeight: 40, spacing: 0.85 },   // Sete barras
-            8: { barHeight: 35, spacing: 0.85 },   // Oito barras
-            9: { barHeight: 33, spacing: 0.85 },   // Nove barras
+//        this.barConfigs = {
+  //          1: { barHeight: 120, spacing: 0.95 },  // Uma barra única e larga
+    //        2: { barHeight: 100, spacing: 0.95 },  // Duas barras bem espaçadas
+      //      3: { barHeight: 60, spacing: 0.95 },   // Três barras (caso ideal visto nos logs)
+        //    4: { barHeight: 50, spacing: 0.90 },   // Quatro barras
+    //        5: { barHeight: 42, spacing: 0.90 },   // Cinco barras
+      //      6: { barHeight: 43, spacing: 0.85 },   // Seis barras
+        //    7: { barHeight: 40, spacing: 0.85 },   // Sete barras
+       //     8: { barHeight: 35, spacing: 0.85 },   // Oito barras
+       //     9: { barHeight: 33, spacing: 0.85 },   // Nove barras
             //10: { barHeight: 30, spacing: 0.80 },  // Dez barras
             //11: { barHeight: 28, spacing: 0.80 },  // Onze barras
-            default: { barHeight: 25, spacing: 0.75 } // 12 ou mais barras
+        //    default: { barHeight: 25, spacing: 0.75 } // 12 ou mais barras
+        //};
+
+        // Configurações específicas para cada quantidade de barras
+        this.barConfigs = {
+            // 1: {
+            //     barHeight: 120,
+            //     spacing: 0.95,
+            //     maxBarThickness: 120,
+            //     minBarLength: 4,
+            //     borderRadius: 8,
+            //     animation: { duration: 1000, easing: 'easeInOutQuart' },
+            //     layout: { autoPadding: true, padding: { top: 25, bottom: 25, left: 20, right: 20 } },
+            //     hover: { mode: 'nearest', intersect: true, animationDuration: 200 },
+            //     tooltip: { position: 'average', padding: 12, caretSize: 8 },
+            //     labels: { align: 'center', offset: 6, font: { size: 14, weight: 'bold' } }
+            // },
+
+            // 2: {
+            //     barHeight: 120,
+            //     spacing: 0.95,
+            //     maxBarThickness: 120,
+            //     minBarLength: 4,
+            //     borderRadius: 8,
+            //     animation: { duration: 1000, easing: 'easeInOutQuart' },
+            //     layout: { autoPadding: true, padding: { top: 25, bottom: 25, left: 20, right: 20 } },
+            //     hover: { mode: 'nearest', intersect: true, animationDuration: 200 },
+            //     tooltip: { position: 'average', padding: 12, caretSize: 8 },
+            //     labels: { align: 'center', offset: 6, font: { size: 14, weight: 'bold' } }
+            // },
+            
+            // 3: {
+            //     barHeight: 120,
+            //     spacing: 0.95,
+            //     maxBarThickness: 120,
+            //     minBarLength: 4,
+            //     borderRadius: 8,
+            //     animation: { duration: 1000, easing: 'easeInOutQuart' },
+            //     layout: { autoPadding: true, padding: { top: 25, bottom: 25, left: 20, right: 20 } },
+            //     hover: { mode: 'nearest', intersect: true, animationDuration: 200 },
+            //     tooltip: { position: 'average', padding: 12, caretSize: 8 },
+            //     labels: { align: 'center', offset: 6, font: { size: 14, weight: 'bold' } }
+            // },            
+            
+            1: { barHeight: 120, spacing: 0.95, maxBarThickness: 120 },
+            2: { barHeight: 90, spacing: 0.05, maxBarThickness: 100 },
+            3: { barHeight: 60, spacing: 0.95, maxBarThickness: 80 },
+            4: { barHeight: 40, spacing: 0.90, maxBarThickness: 70 },
+            5: { barHeight: 35, spacing: 0.90, maxBarThickness: 60 },
+            6: { barHeight: 30, spacing: 0.85, maxBarThickness: 50 },
+            7: { barHeight: 40, spacing: 0.85, maxBarThickness: 45 },
+            8: { barHeight: 35, spacing: 0.85, maxBarThickness: 40 },
+            9: { barHeight: 33, spacing: 0.85, maxBarThickness: 38 },
+            10: { barHeight: 30, spacing: 0.80, maxBarThickness: 35 },
+            11: { barHeight: 28, spacing: 0.80, maxBarThickness: 32 },
+            default: { 
+                barHeight: 40, 
+                spacing: 0.75, 
+                maxBarThickness: 30,
+                minBarLength: 2
+            }
         };
 
         // Armazena configurações específicas por gráfico
@@ -57,7 +117,6 @@ class ChartDimensionsManager {
             dataLength
         });
 
-        // Armazena configuração específica para este gráfico
         const chartConfig = {
             maintainAspectRatio: false,
             responsive: true,
@@ -98,11 +157,16 @@ class ChartDimensionsManager {
             datasets: {
                 bar: {
                     barThickness: config.barHeight,
+                    maxBarThickness: config.maxBarThickness,
+                    minBarLength: config.minBarLength || 2,
                     categoryPercentage: config.spacing,
-                    barPercentage: config.spacing
+                    barPercentage: config.spacing,
+                    borderRadius: 4,
+                    borderSkipped: false
                 }
             },
-            height: totalHeight
+            height: totalHeight,
+            barSpacing: config.spacing * 100
         };
 
         this.chartConfigs.set(chartId, {
@@ -122,10 +186,8 @@ class ChartDimensionsManager {
         const chartId = chart.canvas.id;
 
         if (chart.config.type === 'bar') {
-            // Limpa configuração anterior
             this.chartConfigs.delete(chartId);
             
-            // Obtém nova configuração
             const dimensions = this.getChartConfig(chartId, dataLength, 'bar');
             
             console.debug('Updating chart dimensions:', {
@@ -137,11 +199,17 @@ class ChartDimensionsManager {
 
             if (dataLength > 11) {
                 container.style.height = `${dimensions.height}px`;
+                container.style.overflowY = 'auto';
             } else {
                 container.style.height = `${this.config.containerHeight}px`;
+                container.style.overflowY = 'hidden';
             }
 
+            // Atualiza configurações do dataset
             chart.options.datasets.bar = dimensions.datasets.bar;
+            
+            // Força atualização do layout
+            chart.options.layout.padding = dimensions.layout.padding;
         }
 
         requestAnimationFrame(() => {
@@ -150,12 +218,10 @@ class ChartDimensionsManager {
         });
     }
 
-    // Método para limpar configurações de um gráfico específico
     clearChartConfig(chartId) {
         this.chartConfigs.delete(chartId);
     }
 
-    // Método para limpar todas as configurações
     clearAllConfigs() {
         this.chartConfigs.clear();
     }
@@ -163,3 +229,5 @@ class ChartDimensionsManager {
 
 // Exporta instância única
 window.chartDimensionsManager = new ChartDimensionsManager();
+
+
