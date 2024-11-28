@@ -1,70 +1,73 @@
 class ChartDimensionsManager {
     constructor() {
+        // Configurações base
         this.config = {
-            baseHeight: 300,          // Altura base do container
-            optimalBars: 9,           // Número ótimo de barras
-            barSpacing: {
-                optimal: 0.8,         // Espaçamento ótimo entre barras (80%)
-                dense: 0.95,          // Espaçamento denso para muitas barras (95%)
-            },
-            minBarThickness: 20,      // Espessura mínima da barra
-            maxBarThickness: 40,      // Espessura máxima da barra
+            containerHeight: 300,
             padding: {
                 top: 20,
-                bottom: 20
+                bottom: 20,
+                left: 10,
+                right: 25
             }
+        };
+
+        // Configurações específicas para cada quantidade de barras
+        this.barConfigs = {
+            1: { barHeight: 120, spacing: 0.95 },  // Uma barra única e larga
+            2: { barHeight: 100, spacing: 0.95 },  // Duas barras bem espaçadas
+            3: { barHeight: 60, spacing: 0.95 },   // Três barras (caso ideal visto nos logs)
+            4: { barHeight: 50, spacing: 0.90 },   // Quatro barras
+            5: { barHeight: 20, spacing: 0.90 },   // Cinco barras
+            6: { barHeight: 43, spacing: 0.85 },   // Seis barras
+            7: { barHeight: 40, spacing: 0.85 },   // Sete barras
+            8: { barHeight: 35, spacing: 0.85 },   // Oito barras
+            9: { barHeight: 33, spacing: 0.85 },   // Nove barras
+            10: { barHeight: 30, spacing: 0.80 },  // Dez barras
+            11: { barHeight: 28, spacing: 0.80 },  // Onze barras
+            default: { barHeight: 60, spacing: 0.75 } // 12 ou mais barras
         };
     }
 
-    calculateBarThickness(dataLength) {
-        const availableHeight = this.config.baseHeight - 
-                              this.config.padding.top - 
-                              this.config.padding.bottom;
-        
-        if (dataLength <= this.config.optimalBars) {
-            // Para poucas barras, usa espessura ótima
-            return Math.min(
-                Math.max(
-                    availableHeight / dataLength * this.config.barSpacing.optimal,
-                    this.config.minBarThickness
-                ),
-                this.config.maxBarThickness
-            );
-        }
-        
-        // Para muitas barras, usa espessura fixa menor
-        return this.config.minBarThickness;
+    getBarConfig(dataLength) {
+        console.debug('Getting bar config for length:', dataLength);
+        return this.barConfigs[dataLength] || this.barConfigs.default;
     }
 
     getChartConfig(dataLength, chartType) {
         if (chartType !== 'bar') {
             return {
                 maintainAspectRatio: false,
-                responsive: true,
-                height: this.config.baseHeight
+                responsive: true
             };
         }
 
-        const barThickness = this.calculateBarThickness(dataLength);
-        const spacing = dataLength <= this.config.optimalBars ? 
-                       this.config.barSpacing.optimal : 
-                       this.config.barSpacing.dense;
+        const config = this.getBarConfig(dataLength);
+        const totalHeight = dataLength <= 11 ? 
+            this.config.containerHeight :
+            (dataLength * config.barHeight) + this.config.padding.top + this.config.padding.bottom;
+
+        console.debug('Chart config calculated:', {
+            barThickness: config.barHeight,
+            spacing: config.spacing,
+            totalHeight,
+            dataLength
+        });
 
         return {
             maintainAspectRatio: false,
             responsive: true,
-            height: this.config.baseHeight,
             layout: {
-                padding: {
-                    top: this.config.padding.top,
-                    bottom: this.config.padding.bottom
-                }
+                padding: this.config.padding
             },
             scales: {
                 x: {
                     grid: {
                         display: false,
                         drawBorder: false
+                    },
+                    ticks: {
+                        font: { size: 11 },
+                        color: '#666'
                     }
                 },
                 y: {
@@ -72,18 +75,14 @@ class ChartDimensionsManager {
                         display: false,
                         drawBorder: false
                     },
-                    afterFit: (scale) => {
-                        // Garante espaço adequado para labels
-                        scale.width = 120;
+                    ticks: {
+                        font: {
+                            size: 11,
+                            weight: '500'
+                        },
+                        color: '#444',
+                        padding: 8
                     }
-                }
-            },
-            datasets: {
-                bar: {
-                    barThickness: barThickness,
-                    categoryPercentage: spacing,
-                    barPercentage: spacing,
-                    minBarLength: 5
                 }
             },
             plugins: {
@@ -91,10 +90,14 @@ class ChartDimensionsManager {
                     display: false
                 }
             },
-            animation: {
-                duration: 300,
-                easing: 'easeOutQuad'
-            }
+            datasets: {
+                bar: {
+                    barThickness: config.barHeight,
+                    categoryPercentage: config.spacing,
+                    barPercentage: config.spacing
+                }
+            },
+            height: totalHeight
         };
     }
 
@@ -105,18 +108,23 @@ class ChartDimensionsManager {
         if (!container) return;
 
         if (chart.config.type === 'bar') {
-            const barThickness = this.calculateBarThickness(dataLength);
-            const spacing = dataLength <= this.config.optimalBars ? 
-                          this.config.barSpacing.optimal : 
-                          this.config.barSpacing.dense;
+            const dimensions = this.getChartConfig(dataLength, 'bar');
+            
+            console.debug('Updating chart dimensions:', {
+                dataLength,
+                containerHeight: this.config.containerHeight,
+                barConfig: dimensions.datasets.bar
+            });
 
-            // Atualiza configurações das barras
-            chart.options.datasets.bar.barThickness = barThickness;
-            chart.options.datasets.bar.categoryPercentage = spacing;
-            chart.options.datasets.bar.barPercentage = spacing;
+            if (dataLength > 11) {
+                container.style.height = `${dimensions.height}px`;
+            } else {
+                container.style.height = `${this.config.containerHeight}px`;
+            }
+
+            chart.options.datasets.bar = dimensions.datasets.bar;
         }
 
-        // Força recálculo do layout
         requestAnimationFrame(() => {
             chart.resize();
             chart.update('none');

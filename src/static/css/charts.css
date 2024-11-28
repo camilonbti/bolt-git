@@ -22,36 +22,40 @@
     text-overflow: ellipsis;
 }
 
-.chart-container-father{
+.chart-container-father {
     position: relative;
     height: 300px;
     width: 100%;
     overflow: auto;
 }
+
 .chart-container {
     position: relative;
-    min-height: 300px;
     width: 100%;
-    overflow: hidden;
+    height: auto;
 }
 
-.chart-container:hover {
-    overflow: auto;
+/* Estilização da scrollbar */
+.chart-container-father {
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
-.chart-container::-webkit-scrollbar {
+.chart-container-father::-webkit-scrollbar {
     width: 6px;
 }
 
-.chart-container::-webkit-scrollbar-track {
+.chart-container-father::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.chart-container::-webkit-scrollbar-thumb {
+.chart-container-father::-webkit-scrollbar-thumb {
     background-color: rgba(0, 0, 0, 0.2);
     border-radius: 3px;
+}
+
+.chart-container-father:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.3);
 }
 
 /* Animações */
@@ -68,17 +72,6 @@
 
 .chart-container canvas {
     animation: chartFadeIn 0.5s ease-out;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-    .chart-container {
-        height: 250px;
-    }
-    
-    .chart-card {
-        margin-bottom: 1rem;
-    }
 }
 
 /* Tooltips personalizados */
@@ -114,10 +107,17 @@
 }
 
 /* Hover effects */
-.chart-container:hover {
-    cursor: pointer;
-}
-
 .chart-container:hover canvas {
     filter: brightness(0.98);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .chart-card {
+        margin-bottom: 1rem;
+    }
+    
+    .chart-container-father {
+        height: 250px;
+    }
 }
