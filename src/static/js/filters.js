@@ -278,7 +278,8 @@ class FilterManager {
             canal: 'Canal',
             relato: 'Relato',
             solicitacao: 'Solicitação',
-            relatosDetalhados: 'Relatos Detalhados' // Adicionado o novo label
+            relatosDetalhados: 'Relatos Detalhados',
+            origemProblema: 'Origem do Problema'
         };
         return labels[type] || type;
     }

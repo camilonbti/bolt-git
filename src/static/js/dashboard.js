@@ -173,7 +173,8 @@ class DashboardManager {
             'canal': 'canal_atendimento',
             'relato': 'solicitacao_cliente',
             'solicitacao': 'tipo_atendimento',
-            'relatosDetalhados': 'solicitacao_cliente' // Novo campo
+            'relatosDetalhados': 'solicitacao_cliente',
+            'origemProblema': 'origem_problema'
         };
     
         const fieldName = fieldMappings[key] || key;
@@ -214,7 +215,8 @@ class DashboardManager {
                 canal: { labels: [], values: [] },
                 relato: { labels: [], values: [] },
                 solicitacao: { labels: [], values: [] },
-                relatosDetalhados: { labels: [], values: [] } // Novo gráfico
+                relatosDetalhados: { labels: [], values: [] },
+                origemProblema: { labels: [], values: [] }
             };
         }
     
@@ -228,7 +230,8 @@ class DashboardManager {
             canal: 'canal_atendimento',
             relato: 'solicitacao_cliente',
             solicitacao: 'tipo_atendimento',
-            relatosDetalhados: 'solicitacao_cliente' // Novo campo
+            relatosDetalhados: 'solicitacao_cliente',
+            origemProblema: 'origem_problema'
         };
 
         Object.entries(fields).forEach(([chartName, fieldName]) => {

@@ -257,10 +257,10 @@ class ProcessadorDados:
                 'cliente': self._contar_por_coluna(df, 'cliente'),
                 'sistema': self._contar_por_coluna(df, 'sistema'),
                 'canal': self._contar_por_coluna(df, 'canal_atendimento'),
-                'timeline': self._gerar_timeline(df),
                 'relato': self._contar_por_coluna(df, 'solicitacao_cliente'),
                 'solicitacao': self._contar_por_coluna(df, 'tipo_atendimento'),
-                'relatosDetalhados': self._contar_por_coluna(df, 'solicitacao_cliente')
+                'relatosDetalhados': self._contar_por_coluna(df, 'solicitacao_cliente'),
+                'origemProblema': self._contar_por_coluna(df, 'origem_problema')
             }
         
             logger.debug("Dados dos gráficos gerados com sucesso")
@@ -282,7 +282,8 @@ class ProcessadorDados:
             'timeline': {'labels': [], 'values': []},
             'relato': {'labels': [], 'values': []},
             'solicitacao': {'labels': [], 'values': []},
-            'relatosDetalhados': {'labels': [], 'values': []}
+            'relatosDetalhados': {'labels': [], 'values': []},
+            'origemProblema': {'labels': [], 'values': []}
         }
 
     def _contar_por_coluna(self, df: pd.DataFrame, coluna: str) -> Dict[str, List]:
@@ -349,5 +350,7 @@ class ProcessadorDados:
             'canal': {'labels': [], 'values': []},
             'timeline': {'labels': [], 'values': []},
             'relato': {'labels': [], 'values': []},
-            'solicitacao': {'labels': [], 'values': []}
+            'solicitacao': {'labels': [], 'values': []},
+            'relatosDetalhados': {'labels': [], 'values': []},
+            'origemProblema': {'labels': [], 'values': []}
         }

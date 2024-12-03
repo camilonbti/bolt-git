@@ -44,7 +44,8 @@ MAPEAMENTO_COLUNAS = {
     'Status do atendimento:': 'status_atendimento',
     'Tipo do atendimento solicitado:': 'tipo_atendimento',
     'Sistema do cliente:': 'sistema',
-    'Qual(s) canal(s) utilizado(s) para realizar o atendimento? ': 'canal_atendimento'
+    'Qual(s) canal(s) utilizado(s) para realizar o atendimento? ': 'canal_atendimento',
+    'Origem do problema:': 'origem_problema'
 }
 
 # Valores default para campos vazios
@@ -63,7 +64,8 @@ VALORES_DEFAULT = {
     'status_atendimento': os.getenv('DEFAULT_STATUS', 'Pendente'),
     'tipo_atendimento': os.getenv('DEFAULT_TIPO', 'Não categorizado'),
     'sistema': os.getenv('DEFAULT_SISTEMA', 'Não especificado'),
-    'canal_atendimento': os.getenv('DEFAULT_CANAL', 'Não especificado')
+    'canal_atendimento': os.getenv('DEFAULT_CANAL', 'Não especificado'),
+    'origem_problema': os.getenv('DEFAULT_ORIGEM', 'Não especificado')
 }
 
 # Configuração completa dos campos
@@ -213,6 +215,16 @@ CAMPOS_CONFIGURACAO = {
         "permite_filtro": True,
         "tipo_filtro": "select",
         "label": "Canal",
+        "visivel": True
+    },
+    "Origem do problema:": {
+        "nome_interno": "origem_problema",
+        "tipo": "string",
+        "obrigatorio": False,
+        "valor_default": VALORES_DEFAULT['origem_problema'],
+        "permite_filtro": True,
+        "tipo_filtro": "select",
+        "label": "Origem",
         "visivel": True
     }
 }

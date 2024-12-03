@@ -163,7 +163,8 @@ class DashboardManager:
                 'canal': self._contar_por_coluna(df, 'canal_atendimento'),
                 'timeline': self._gerar_timeline(df),
                 'relato': self._contar_por_coluna(df, 'solicitacao_cliente', 10),
-                'solicitacao': self._contar_por_coluna(df, 'tipo_atendimento', 10)
+                'solicitacao': self._contar_por_coluna(df, 'tipo_atendimento', 10),
+                'origemProblema': self._contar_por_coluna(df, 'origem_problema', 10)
             }
             
             logger.debug("Dados dos gráficos gerados com sucesso")
@@ -237,5 +238,6 @@ class DashboardManager:
             'canal': {'labels': [], 'values': []},
             'timeline': {'labels': [], 'values': []},
             'relato': {'labels': [], 'values': []},
-            'solicitacao': {'labels': [], 'values': []}
+            'solicitacao': {'labels': [], 'values': []},
+            'origemProblema': {'labels': [], 'values': []}
         }

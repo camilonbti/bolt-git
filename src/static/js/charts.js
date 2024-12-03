@@ -40,7 +40,8 @@ class ChartManager {
             'canal',
             'relato',
             'solicitacao',
-            'relatosDetalhados'
+            'relatosDetalhados',
+            'origemProblema'
         ];
 
         barCharts.forEach(type => {
@@ -65,7 +66,8 @@ class ChartManager {
             canal: 'Canais de Atendimento',
             relato: 'Relatos de Atendimento',
             solicitacao: 'Tipos de Solicitação',
-            relatosDetalhados: 'Relatos Detalhados'
+            relatosDetalhados: 'Relatos Detalhados',
+            origemProblema: 'Origem do Problema'
         };
         return titles[type] || type;
     }
