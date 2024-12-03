@@ -21,41 +21,8 @@ class ChartManager {
     }
 
     initCharts() {
-        const commonOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            indexAxis: 'y',
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: (context) => {
-                            const value = context.raw;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
-                            return `${context.label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    grid: {
-                        display: false
-                    }
-                },
-                y: {
-                    grid: {
-                        display: false
-                    }
-                }
-            }
-        };
+        const commonOptions = window.chartDimensionsManager.getCommonChartOptions();
 
-        // Alterado de 'doughnut' para 'bar'
         this.createChart('status', 'bar', {
             ...commonOptions,
             plugins: {
@@ -117,8 +84,7 @@ class ChartManager {
         const dataLength = data.labels.length;
         const colors = customColors || this.colorPalette.getChartColors(dataLength);
         
-        // Usa o gerenciador de dimensões
-        const dimensions = window.chartDimensionsManager.getChartConfig(dataLength, chartType);
+        const dimensions = window.chartDimensionsManager.getChartConfig(elementId, dataLength, chartType);
         
         const chart = new Chart(ctx, {
             type: chartType,
@@ -184,7 +150,6 @@ class ChartManager {
                     baseColor;
             });
             
-            // Atualiza dimensões usando o gerenciador
             window.chartDimensionsManager.updateChartDimensions(chart, dataLength);
             
             chart.update('none');

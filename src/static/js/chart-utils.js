@@ -1,6 +1,5 @@
 class ChartDimensionsManager {
     constructor() {
-        // Configurações base
         this.config = {
             containerHeight: 300,
             padding: {
@@ -11,70 +10,14 @@ class ChartDimensionsManager {
             }
         };
 
-        // Configurações específicas para cada quantidade de barras
-//        this.barConfigs = {
-  //          1: { barHeight: 120, spacing: 0.95 },  // Uma barra única e larga
-    //        2: { barHeight: 100, spacing: 0.95 },  // Duas barras bem espaçadas
-      //      3: { barHeight: 60, spacing: 0.95 },   // Três barras (caso ideal visto nos logs)
-        //    4: { barHeight: 50, spacing: 0.90 },   // Quatro barras
-    //        5: { barHeight: 42, spacing: 0.90 },   // Cinco barras
-      //      6: { barHeight: 43, spacing: 0.85 },   // Seis barras
-        //    7: { barHeight: 40, spacing: 0.85 },   // Sete barras
-       //     8: { barHeight: 35, spacing: 0.85 },   // Oito barras
-       //     9: { barHeight: 33, spacing: 0.85 },   // Nove barras
-            //10: { barHeight: 30, spacing: 0.80 },  // Dez barras
-            //11: { barHeight: 28, spacing: 0.80 },  // Onze barras
-        //    default: { barHeight: 25, spacing: 0.75 } // 12 ou mais barras
-        //};
-
-        // Configurações específicas para cada quantidade de barras
         this.barConfigs = {
-            // 1: {
-            //     barHeight: 120,
-            //     spacing: 0.95,
-            //     maxBarThickness: 120,
-            //     minBarLength: 4,
-            //     borderRadius: 8,
-            //     animation: { duration: 1000, easing: 'easeInOutQuart' },
-            //     layout: { autoPadding: true, padding: { top: 25, bottom: 25, left: 20, right: 20 } },
-            //     hover: { mode: 'nearest', intersect: true, animationDuration: 200 },
-            //     tooltip: { position: 'average', padding: 12, caretSize: 8 },
-            //     labels: { align: 'center', offset: 6, font: { size: 14, weight: 'bold' } }
-            // },
-
-            // 2: {
-            //     barHeight: 120,
-            //     spacing: 0.95,
-            //     maxBarThickness: 120,
-            //     minBarLength: 4,
-            //     borderRadius: 8,
-            //     animation: { duration: 1000, easing: 'easeInOutQuart' },
-            //     layout: { autoPadding: true, padding: { top: 25, bottom: 25, left: 20, right: 20 } },
-            //     hover: { mode: 'nearest', intersect: true, animationDuration: 200 },
-            //     tooltip: { position: 'average', padding: 12, caretSize: 8 },
-            //     labels: { align: 'center', offset: 6, font: { size: 14, weight: 'bold' } }
-            // },
-            
-            // 3: {
-            //     barHeight: 120,
-            //     spacing: 0.95,
-            //     maxBarThickness: 120,
-            //     minBarLength: 4,
-            //     borderRadius: 8,
-            //     animation: { duration: 1000, easing: 'easeInOutQuart' },
-            //     layout: { autoPadding: true, padding: { top: 25, bottom: 25, left: 20, right: 20 } },
-            //     hover: { mode: 'nearest', intersect: true, animationDuration: 200 },
-            //     tooltip: { position: 'average', padding: 12, caretSize: 8 },
-            //     labels: { align: 'center', offset: 6, font: { size: 14, weight: 'bold' } }
-            // },            
-            
             1: { barHeight: 120, spacing: 0.95, maxBarThickness: 120 },
             2: { barHeight: 90, spacing: 0.05, maxBarThickness: 100 },
             3: { barHeight: 60, spacing: 0.95, maxBarThickness: 80 },
             4: { barHeight: 40, spacing: 0.90, maxBarThickness: 70 },
             5: { barHeight: 35, spacing: 0.90, maxBarThickness: 60 },
             6: { barHeight: 30, spacing: 0.85, maxBarThickness: 50 },
-            7: { barHeight: 40, spacing: 0.85, maxBarThickness: 45 },
+            7: { barHeight: 29, spacing: 0.85, maxBarThickness: 40 },
             8: { barHeight: 35, spacing: 0.85, maxBarThickness: 40 },
             9: { barHeight: 33, spacing: 0.85, maxBarThickness: 38 },
             10: { barHeight: 30, spacing: 0.80, maxBarThickness: 35 },
@@ -87,7 +30,6 @@ class ChartDimensionsManager {
             }
         };
 
-        // Armazena configurações específicas por gráfico
         this.chartConfigs = new Map();
     }
 
@@ -152,6 +94,27 @@ class ChartDimensionsManager {
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    enabled: true,
+                    position: 'nearest',
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleFont: {
+                        size: 13
+                    },
+                    bodyFont: {
+                        size: 12
+                    },
+                    padding: 10,
+                    displayColors: false,
+                    callbacks: {
+                        label: (context) => {
+                            const value = context.raw;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                            return `Total: ${value} (${percentage}%)`;
+                        }
+                    }
                 }
             },
             datasets: {
@@ -205,10 +168,7 @@ class ChartDimensionsManager {
                 container.style.overflowY = 'hidden';
             }
 
-            // Atualiza configurações do dataset
             chart.options.datasets.bar = dimensions.datasets.bar;
-            
-            // Força atualização do layout
             chart.options.layout.padding = dimensions.layout.padding;
         }
 
@@ -225,9 +185,73 @@ class ChartDimensionsManager {
     clearAllConfigs() {
         this.chartConfigs.clear();
     }
+
+    getCommonChartOptions() {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: {
+                    display: false
+                },
+                datalabels: {
+                    color: '#444',
+                    anchor: 'end',
+                    align: 'end',
+                    offset: 4,
+                    font: {
+                        size: 11,
+                        weight: '500'
+                    },
+                    formatter: (value, context) => {
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                        return `${value} (${percentage}%)`;
+                    }
+                },
+                tooltip: {
+                    enabled: true,
+                    position: 'nearest',
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleFont: {
+                        size: 13
+                    },
+                    bodyFont: {
+                        size: 12
+                    },
+                    padding: 10,
+                    displayColors: false,
+                    callbacks: {
+                        label: (context) => {
+                            const value = context.raw;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                            return `Total: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value;
+                        }
+                    }
+                },
+                y: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        };
+    }
 }
 
-// Exporta instância única
 window.chartDimensionsManager = new ChartDimensionsManager();
-
-
