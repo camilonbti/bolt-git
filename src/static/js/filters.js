@@ -36,15 +36,12 @@ class FilterManager {
             console.debug('Clique no gráfico:', event.detail);
             this.toggleFilter(event.detail.type, event.detail.value);
         });
-
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-
-        if (startDateInput && endDateInput) {
-            startDateInput.addEventListener('change', () => this.handleDateChange());
-            endDateInput.addEventListener('change', () => this.handleDateChange());
+    
+        const searchDateBtn = document.getElementById('searchDateBtn');
+        if (searchDateBtn) {
+            searchDateBtn.addEventListener('click', () => this.handleDateSearch());
         }
-
+    
         // Escuta o evento de dados carregados
         document.addEventListener('dashboardUpdate', (event) => {
             if (event.detail && event.detail.registros) {
@@ -53,25 +50,36 @@ class FilterManager {
                 this.applyInitialPeriodFilter();
             }
         });
+    
+        // Inicializa os campos de data
+        document.addEventListener('DOMContentLoaded', () => {
+            this.initializeDateFields();
+            this.applyInitialPeriodFilter();
+        });
+    
+        // Escuta eventos de mudança nos filtros
+        document.addEventListener('filterChange', () => {
+            if (this.filteredData) {
+                const filters = this.getActiveFilters();
+                this.applyFiltersOnce(this.filteredData, filters);
+            }
+        });
     }
 
     applyInitialPeriodFilter() {
         console.debug('Aplicando filtro de período inicial');
-        
         const filters = this.getActiveFilters();
-        console.debug('Filtros ativos:', filters);
-        
-        // Força a atualização da UI e notifica a mudança
         this.updateUI();
         this.notifyFilterChange();
-    }
+    }    
 
-    handleDateChange() {
+    handleDateSearch() {
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
 
         if (!startDateInput || !endDateInput || !startDateInput.value || !endDateInput.value) {
             console.warn('Campos de data não preenchidos');
+            this.showError('Preencha as datas inicial e final');
             return;
         }
 

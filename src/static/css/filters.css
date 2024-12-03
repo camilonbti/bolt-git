@@ -18,6 +18,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: nowrap;
 }
 
 .period-filter label {
@@ -40,6 +41,19 @@
     border-color: var(--primary-color);
     box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
     outline: none;
+}
+
+.period-filter .btn {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.period-filter .btn i {
+    font-size: 0.75rem;
 }
 
 /* Container de filtros ativos */
@@ -130,10 +144,17 @@
     
     .period-filter {
         flex-wrap: wrap;
+        justify-content: space-between;
     }
     
     .period-filter input[type="date"] {
+        width: calc(50% - 1rem);
+    }
+
+    .period-filter .btn {
         width: 100%;
+        margin-top: 0.5rem;
+        justify-content: center;
     }
     
     .filter-item {
