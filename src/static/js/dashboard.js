@@ -174,8 +174,7 @@ class DashboardManager {
             'relato': 'solicitacao_cliente',
             'solicitacao': 'tipo_atendimento',
             'relatosDetalhados': 'solicitacao_cliente',
-            'timelineDay': 'data_hora',
-            'timelineHour': 'data_hora'
+            'origemProblema': 'origem_problema'
         };
     
         const fieldName = fieldMappings[key] || key;
@@ -217,8 +216,7 @@ class DashboardManager {
                 relato: { labels: [], values: [] },
                 solicitacao: { labels: [], values: [] },
                 relatosDetalhados: { labels: [], values: [] },
-                timelineDay: { labels: [], values: [] },
-                timelineHour: { labels: [], values: [] }
+                origemProblema: { labels: [], values: [] }
             };
         }
     
@@ -232,10 +230,10 @@ class DashboardManager {
             canal: 'canal_atendimento',
             relato: 'solicitacao_cliente',
             solicitacao: 'tipo_atendimento',
-            relatosDetalhados: 'solicitacao_cliente'
+            relatosDetalhados: 'solicitacao_cliente',
+            origemProblema: 'origem_problema'
         };
 
-        // Processamento dos gráficos de barra
         Object.entries(fields).forEach(([chartName, fieldName]) => {
             const counts = data.reduce((acc, registro) => {
                 const value = registro[fieldName] || 'Não informado';
@@ -251,60 +249,6 @@ class DashboardManager {
                 values: sortedEntries.map(([, value]) => value)
             };
         });
-
-        // Processamento dos dados para timeline
-        const timelineDay = {};
-        const timelineHour = {};
-
-        data.forEach(registro => {
-            if (!registro.data_hora) return;
-        
-            try {
-                // Converte o timestamp para objeto Date
-                const date = new Date(parseInt(registro.data_hora));
-                if (isNaN(date.getTime())) {
-                    console.warn('Data inválida:', registro.data_hora);
-                    return;
-                }
-        
-                // Agrupamento por dia - usando ISO string para garantir formato consistente
-                const dayKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
-                timelineDay[dayKey] = (timelineDay[dayKey] || 0) + 1;
-        
-                // Agrupamento por hora - mantendo apenas hora e minuto
-                const hourKey = date.toLocaleTimeString('pt-BR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit',
-                    hour12: false
-                });
-                timelineHour[hourKey] = (timelineHour[hourKey] || 0) + 1;
-        
-            } catch (error) {
-                console.error('Erro ao processar data:', error);
-            }
-        });
-        
-        // Ordenação das timelines
-        const sortedDays = Object.entries(timelineDay)
-            .sort(([a], [b]) => new Date(a) - new Date(b));
-        
-        const sortedHours = Object.entries(timelineHour)
-            .sort(([a], [b]) => {
-                const [hourA, minuteA] = a.split(':').map(Number);
-                const [hourB, minuteB] = b.split(':').map(Number);
-                return (hourA * 60 + minuteA) - (hourB * 60 + minuteB);
-            });
-        
-        charts.timelineDay = {
-            labels: sortedDays.map(([date]) => date), // Mantém formato ISO para o Chart.js
-            values: sortedDays.map(([, count]) => count)
-        };
-        
-        charts.timelineHour = {
-            labels: sortedHours.map(([hour]) => hour),
-            values: sortedHours.map(([, count]) => count)
-        };
-        
 
         return charts;
     }

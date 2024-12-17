@@ -23,92 +23,6 @@ class ChartManager {
     initCharts() {
         const commonOptions = window.chartDimensionsManager.getCommonChartOptions();
 
-        // Timeline por Dia
-        this.createChart('timelineDay', 'line', {
-            ...commonOptions,
-            scales: {
-                x: {
-                    type: 'time',
-                    time: {
-                        unit: 'day',
-                        displayFormats: {
-                            day: 'dd/MM/yyyy'
-                        },
-                        tooltipFormat: 'dd/MM/yyyy'
-                    },
-                    adapters: {
-                        date: {
-                            locale: 'pt-BR'
-                        }
-                    },
-                    ticks: {
-                        source: 'auto',
-                        maxRotation: 45
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        precision: 0
-                    }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        title: (context) => {
-                            const date = new Date(context[0].parsed.x);
-                            return date.toLocaleDateString('pt-BR');
-                        },
-                        label: (context) => `Total: ${context.raw}`
-                    }
-                }
-            }
-        });
-
-        // Timeline por Hora
-        this.createChart('timelineHour', 'line', {
-            ...commonOptions,
-            scales: {
-                x: {
-                    type: 'time',
-                    time: {
-                        unit: 'hour',
-                        displayFormats: {
-                            hour: 'HH:mm'
-                        },
-                        tooltipFormat: 'HH:mm'
-                    },
-                    adapters: {
-                        date: {
-                            locale: 'pt-BR'
-                        }
-                    },
-                    ticks: {
-                        source: 'auto',
-                        maxRotation: 45
-                    }
-                },
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        precision: 0
-                    }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        title: (context) => {
-                            const date = new Date(context[0].parsed.x);
-                            return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                        },
-                        label: (context) => `Total: ${context.raw}`
-                    }
-                }
-            }
-        });
-
         this.createChart('status', 'bar', {
             ...commonOptions,
             plugins: {
@@ -126,7 +40,8 @@ class ChartManager {
             'canal',
             'relato',
             'solicitacao',
-            'relatosDetalhados'
+            'relatosDetalhados',
+            'origemProblema'
         ];
 
         barCharts.forEach(type => {
@@ -152,8 +67,7 @@ class ChartManager {
             relato: 'Relatos de Atendimento',
             solicitacao: 'Tipos de Solicitação',
             relatosDetalhados: 'Relatos Detalhados',
-            timelineDay: 'Atendimentos por Dia',
-            timelineHour: 'Atendimentos por Hora'
+            origemProblema: 'Origem do Problema'
         };
         return titles[type] || type;
     }
@@ -174,89 +88,32 @@ class ChartManager {
         
         const dimensions = window.chartDimensionsManager.getChartConfig(elementId, dataLength, chartType);
         
-        const chartData = type.startsWith('timeline') ? {
-            datasets: [{
-                data: data.values.map((value, index) => ({
-                    x: new Date(data.labels[index]).getTime(),
-                    y: value
-                })),
-                backgroundColor: colors,
-                borderWidth: 1,
-                borderColor: chartType === 'line' ? colors[1] : colors.map(color => this.colorPalette.adjustOpacity(color, 0.8)),
-                tension: chartType === 'line' ? 0.4 : 0
-            }]
-        } : {
-            labels: data.labels,
-            datasets: [{
-                data: data.values,
-                backgroundColor: colors,
-                borderWidth: 1,
-                borderColor: chartType === 'line' ? colors[1] : colors.map(color => this.colorPalette.adjustOpacity(color, 0.8)),
-                tension: chartType === 'line' ? 0.4 : 0
-            }]
-        };
-        
         const chart = new Chart(ctx, {
             type: chartType,
-            data: chartData,
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    data: data.values,
+                    backgroundColor: colors,
+                    borderWidth: 1,
+                    borderColor: colors.map(color => this.colorPalette.adjustOpacity(color, 0.8))
+                }]
+            },
             options: {
                 ...options,
                 ...dimensions,
                 onClick: (event, elements) => {
                     if (elements.length > 0) {
                         const index = elements[0].index;
-                        const value = chart.data.labels ? chart.data.labels[index] : null;
-                        if (value) {
-                            document.dispatchEvent(new CustomEvent('chartClick', {
-                                detail: { type, value }
-                            }));
-                        }
-                    }
-                },
-                plugins: {
-                    ...options.plugins,
-                    tooltip: {
-                        ...options.plugins?.tooltip,
-                        callbacks: {
-                            title: (context) => {
-                                if (type.startsWith('timeline')) {
-                                    const date = new Date(context[0].parsed.x);
-                                    return type === 'timelineDay' ? 
-                                        date.toLocaleDateString('pt-BR') :
-                                        date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-                                }
-                                return context[0].label;
-                            },
-                            label: (context) => {
-                                const value = type.startsWith('timeline') ? context.parsed.y : context.raw;
-                                return `Total: ${value}`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    ...options.scales,
-                    x: {
-                        ...options.scales?.x,
-                        type: type.startsWith('timeline') ? 'time' : 'category',
-                        time: type.startsWith('timeline') ? {
-                            unit: type === 'timelineDay' ? 'day' : 'hour',
-                            displayFormats: {
-                                day: 'dd/MM/yyyy',
-                                hour: 'HH:mm'
-                            },
-                            tooltipFormat: type === 'timelineDay' ? 'dd/MM/yyyy' : 'HH:mm'
-                        } : undefined,
-                        adapters: type.startsWith('timeline') ? {
-                            date: {
-                                locale: 'pt-BR'
-                            }
-                        } : undefined
+                        const value = chart.data.labels[index];
+                        document.dispatchEvent(new CustomEvent('chartClick', {
+                            detail: { type, value }
+                        }));
                     }
                 }
             }
         });
-            
+    
         this.charts[type] = chart;
         return chart;
     }
@@ -285,23 +142,15 @@ class ChartManager {
                 this.colorPalette.getStatusColors() : 
                 this.colorPalette.getChartColors(dataLength);
             
-            if (type.startsWith('timeline')) {
-                chart.data.datasets[0].data = chartData.values.map((value, index) => ({
-                    x: new Date(chartData.labels[index]).getTime(),
-                    y: value
-                }));
-                chart.data.datasets[0].borderColor = colors[1];
-                chart.data.datasets[0].backgroundColor = this.colorPalette.adjustOpacity(colors[1], 0.1);
-            } else {
-                chart.data.labels = chartData.labels;
-                chart.data.datasets[0].data = chartData.values;
-                chart.data.datasets[0].backgroundColor = chartData.labels.map((label, index) => {
-                    const baseColor = colors[index % colors.length];
-                    return activeFilters[type]?.includes(label) ?
-                        this.colorPalette.adjustOpacity(baseColor, 0.8) :
-                        baseColor;
-                });
-            }
+            chart.data.labels = chartData.labels;
+            chart.data.datasets[0].data = chartData.values;
+            
+            chart.data.datasets[0].backgroundColor = chartData.labels.map((label, index) => {
+                const baseColor = colors[index % colors.length];
+                return activeFilters[type]?.includes(label) ?
+                    this.colorPalette.adjustOpacity(baseColor, 0.8) :
+                    baseColor;
+            });
             
             window.chartDimensionsManager.updateChartDimensions(chart, dataLength);
             
@@ -312,8 +161,7 @@ class ChartManager {
     resizeCharts() {
         Object.values(this.charts).forEach(chart => {
             if (chart) {
-                const dataLength = chart.data.labels ? chart.data.labels.length : 
-                    chart.data.datasets[0].data.length;
+                const dataLength = chart.data.labels.length;
                 window.chartDimensionsManager.updateChartDimensions(chart, dataLength);
             }
         });
