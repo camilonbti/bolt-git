@@ -174,7 +174,8 @@ class DashboardManager {
             'relato': 'solicitacao_cliente',
             'solicitacao': 'tipo_atendimento',
             'relatosDetalhados': 'solicitacao_cliente',
-            'origemProblema': 'origem_problema'
+            'timelineDay': 'data_hora',
+            'timelineHour': 'data_hora'
         };
     
         const fieldName = fieldMappings[key] || key;
@@ -216,7 +217,8 @@ class DashboardManager {
                 relato: { labels: [], values: [] },
                 solicitacao: { labels: [], values: [] },
                 relatosDetalhados: { labels: [], values: [] },
-                origemProblema: { labels: [], values: [] }
+                timelineDay: { labels: [], values: [] },
+                timelineHour: { labels: [], values: [] }
             };
         }
     
@@ -230,10 +232,10 @@ class DashboardManager {
             canal: 'canal_atendimento',
             relato: 'solicitacao_cliente',
             solicitacao: 'tipo_atendimento',
-            relatosDetalhados: 'solicitacao_cliente',
-            origemProblema: 'origem_problema'
+            relatosDetalhados: 'solicitacao_cliente'
         };
 
+        // Processamento dos gráficos de barra
         Object.entries(fields).forEach(([chartName, fieldName]) => {
             const counts = data.reduce((acc, registro) => {
                 const value = registro[fieldName] || 'Não informado';
@@ -249,6 +251,41 @@ class DashboardManager {
                 values: sortedEntries.map(([, value]) => value)
             };
         });
+
+        // Processamento dos dados para timeline
+        const timelineDay = {};
+        const timelineHour = {};
+
+        data.forEach(registro => {
+            if (!registro.data_hora) return;
+
+            const date = new Date(parseInt(registro.data_hora));
+            
+            // Agrupamento por dia
+            const dayKey = date.toLocaleDateString('pt-BR');
+            timelineDay[dayKey] = (timelineDay[dayKey] || 0) + 1;
+
+            // Agrupamento por hora
+            const hourKey = date.getHours().toString().padStart(2, '0') + ':00';
+            timelineHour[hourKey] = (timelineHour[hourKey] || 0) + 1;
+        });
+
+        // Ordenação das timelines
+        const sortedDays = Object.entries(timelineDay)
+            .sort(([a], [b]) => new Date(a) - new Date(b));
+        
+        const sortedHours = Object.entries(timelineHour)
+            .sort(([a], [b]) => a.localeCompare(b));
+
+        charts.timelineDay = {
+            labels: sortedDays.map(([date]) => date),
+            values: sortedDays.map(([, count]) => count)
+        };
+
+        charts.timelineHour = {
+            labels: sortedHours.map(([hour]) => hour),
+            values: sortedHours.map(([, count]) => count)
+        };
 
         return charts;
     }

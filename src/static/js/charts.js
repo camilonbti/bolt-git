@@ -23,6 +23,72 @@ class ChartManager {
     initCharts() {
         const commonOptions = window.chartDimensionsManager.getCommonChartOptions();
 
+        // Timeline por Dia
+        this.createChart('timelineDay', 'line', {
+            ...commonOptions,
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day',
+                        displayFormats: {
+                            day: 'DD/MM/YYYY'
+                        }
+                    },
+                    ticks: {
+                        source: 'auto',
+                        maxRotation: 45
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: (context) => `Total: ${context.raw}`
+                    }
+                }
+            }
+        });
+
+        // Timeline por Hora
+        this.createChart('timelineHour', 'line', {
+            ...commonOptions,
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'hour',
+                        displayFormats: {
+                            hour: 'HH:mm'
+                        }
+                    },
+                    ticks: {
+                        source: 'auto',
+                        maxRotation: 45
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: (context) => `Total: ${context.raw}`
+                    }
+                }
+            }
+        });
+
         this.createChart('status', 'bar', {
             ...commonOptions,
             plugins: {
@@ -40,8 +106,7 @@ class ChartManager {
             'canal',
             'relato',
             'solicitacao',
-            'relatosDetalhados',
-            'origemProblema'
+            'relatosDetalhados'
         ];
 
         barCharts.forEach(type => {
@@ -67,7 +132,8 @@ class ChartManager {
             relato: 'Relatos de Atendimento',
             solicitacao: 'Tipos de Solicitação',
             relatosDetalhados: 'Relatos Detalhados',
-            origemProblema: 'Origem do Problema'
+            timelineDay: 'Atendimentos por Dia',
+            timelineHour: 'Atendimentos por Hora'
         };
         return titles[type] || type;
     }
@@ -96,7 +162,8 @@ class ChartManager {
                     data: data.values,
                     backgroundColor: colors,
                     borderWidth: 1,
-                    borderColor: colors.map(color => this.colorPalette.adjustOpacity(color, 0.8))
+                    borderColor: chartType === 'line' ? colors[1] : colors.map(color => this.colorPalette.adjustOpacity(color, 0.8)),
+                    tension: chartType === 'line' ? 0.4 : 0
                 }]
             },
             options: {
@@ -145,12 +212,17 @@ class ChartManager {
             chart.data.labels = chartData.labels;
             chart.data.datasets[0].data = chartData.values;
             
-            chart.data.datasets[0].backgroundColor = chartData.labels.map((label, index) => {
-                const baseColor = colors[index % colors.length];
-                return activeFilters[type]?.includes(label) ?
-                    this.colorPalette.adjustOpacity(baseColor, 0.8) :
-                    baseColor;
-            });
+            if (type.startsWith('timeline')) {
+                chart.data.datasets[0].borderColor = colors[1];
+                chart.data.datasets[0].backgroundColor = this.colorPalette.adjustOpacity(colors[1], 0.1);
+            } else {
+                chart.data.datasets[0].backgroundColor = chartData.labels.map((label, index) => {
+                    const baseColor = colors[index % colors.length];
+                    return activeFilters[type]?.includes(label) ?
+                        this.colorPalette.adjustOpacity(baseColor, 0.8) :
+                        baseColor;
+                });
+            }
             
             window.chartDimensionsManager.updateChartDimensions(chart, dataLength);
             
