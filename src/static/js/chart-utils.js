@@ -18,10 +18,6 @@ class ChartDimensionsManager {
             5: { barHeight: 35, spacing: 0.90, maxBarThickness: 60 },
             6: { barHeight: 30, spacing: 0.85, maxBarThickness: 50 },
             7: { barHeight: 29, spacing: 0.85, maxBarThickness: 40 },
-            8: { barHeight: 35, spacing: 0.85, maxBarThickness: 40 },
-            9: { barHeight: 33, spacing: 0.85, maxBarThickness: 38 },
-            10: { barHeight: 30, spacing: 0.80, maxBarThickness: 35 },
-            11: { barHeight: 28, spacing: 0.80, maxBarThickness: 32 },
             default: { 
                 barHeight: 40, 
                 spacing: 0.75, 

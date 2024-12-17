@@ -1,6 +1,0 @@
-*.bkp
-*.bak
-*.~*
-.idea/*
-.vscode/*
-*__pycache__*
