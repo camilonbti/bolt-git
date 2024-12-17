@@ -258,34 +258,53 @@ class DashboardManager {
 
         data.forEach(registro => {
             if (!registro.data_hora) return;
-
-            const date = new Date(parseInt(registro.data_hora));
-            
-            // Agrupamento por dia
-            const dayKey = date.toLocaleDateString('pt-BR');
-            timelineDay[dayKey] = (timelineDay[dayKey] || 0) + 1;
-
-            // Agrupamento por hora
-            const hourKey = date.getHours().toString().padStart(2, '0') + ':00';
-            timelineHour[hourKey] = (timelineHour[hourKey] || 0) + 1;
+        
+            try {
+                // Converte o timestamp para objeto Date
+                const date = new Date(parseInt(registro.data_hora));
+                if (isNaN(date.getTime())) {
+                    console.warn('Data inválida:', registro.data_hora);
+                    return;
+                }
+        
+                // Agrupamento por dia - usando ISO string para garantir formato consistente
+                const dayKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+                timelineDay[dayKey] = (timelineDay[dayKey] || 0) + 1;
+        
+                // Agrupamento por hora - mantendo apenas hora e minuto
+                const hourKey = date.toLocaleTimeString('pt-BR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false
+                });
+                timelineHour[hourKey] = (timelineHour[hourKey] || 0) + 1;
+        
+            } catch (error) {
+                console.error('Erro ao processar data:', error);
+            }
         });
-
+        
         // Ordenação das timelines
         const sortedDays = Object.entries(timelineDay)
             .sort(([a], [b]) => new Date(a) - new Date(b));
         
         const sortedHours = Object.entries(timelineHour)
-            .sort(([a], [b]) => a.localeCompare(b));
-
+            .sort(([a], [b]) => {
+                const [hourA, minuteA] = a.split(':').map(Number);
+                const [hourB, minuteB] = b.split(':').map(Number);
+                return (hourA * 60 + minuteA) - (hourB * 60 + minuteB);
+            });
+        
         charts.timelineDay = {
-            labels: sortedDays.map(([date]) => date),
+            labels: sortedDays.map(([date]) => date), // Mantém formato ISO para o Chart.js
             values: sortedDays.map(([, count]) => count)
         };
-
+        
         charts.timelineHour = {
             labels: sortedHours.map(([hour]) => hour),
             values: sortedHours.map(([, count]) => count)
         };
+        
 
         return charts;
     }
