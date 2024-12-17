@@ -43,7 +43,7 @@ class ChartDimensionsManager {
         }
 
         const config = this.getBarConfig(dataLength);
-        const totalHeight = dataLength <= 7 ? 
+        const totalHeight = dataLength <= 11 ? 
             this.config.containerHeight :
             (dataLength * config.barHeight) + this.config.padding.top + this.config.padding.bottom;
 
@@ -156,7 +156,7 @@ class ChartDimensionsManager {
                 barConfig: dimensions.datasets.bar
             });
 
-            if (dataLength > 7) {
+            if (dataLength > 11) {
                 container.style.height = `${dimensions.height}px`;
                 container.style.overflowY = 'auto';
             } else {
