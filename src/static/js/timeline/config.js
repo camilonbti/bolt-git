@@ -26,7 +26,7 @@ const TimelineConfig = {
                     ticks: {
                         maxTicksLimit: 10,
                         callback: (value, index, ticks) => 
-                            window.TimelineUtils.formatDate(ticks.chart.data.labels[index])
+                            window.TimelineUtils.formatDate(ticks.chart.data_atendimento.labels[index])                        
                     }
                 },
                 y: {

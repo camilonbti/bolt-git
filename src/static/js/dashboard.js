@@ -222,16 +222,13 @@ class DashboardManager {
     }
 
     filterByPeriod(registro, period) {
-        if (!registro.data_hora || !period.start || !period.end) {
+        if (!registro.data_atendimento || !period.start || !period.end) {
             return true;
         }
-
+    
         try {
-            const registroDate = new Date(parseInt(registro.data_hora));
-            const startDate = new Date(period.start);
-            const endDate = new Date(period.end);
-
-            return registroDate >= startDate && registroDate <= endDate;
+            return registro.data_atendimento >= period.start && 
+                   registro.data_atendimento <= period.end;
         } catch (error) {
             console.error('Erro ao filtrar por período:', error);
             return true;

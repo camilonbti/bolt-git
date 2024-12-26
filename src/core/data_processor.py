@@ -94,13 +94,15 @@ class ProcessadorDados:
             return self._get_estrutura_vazia()
 
     def _concatenar_campos_relato(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Concatena os campos de relato detalhado em um único campo."""
         try:
+            # Processa campos de relato
+            logger.info("=== Iniciando processamento de campos ===")
+            
             campos_relato = [
                 'relato_detalhado_1', 'relato_detalhado_2', 'relato_detalhado_3',
                 'relato_detalhado_4', 'relato_detalhado_5'
             ]
-        
+            
             def concatenar_relatos(row):
                 relatos = []
                 for campo in campos_relato:
@@ -108,18 +110,37 @@ class ProcessadorDados:
                         relatos.append(str(row.get(campo)).strip())
                 return "\n".join(relatos) if relatos else row.get('solicitacao_cliente', '')
         
-            # Aplica a concatenação apenas se os campos existirem
             if all(campo in df.columns for campo in campos_relato):
                 df['solicitacao_cliente'] = df.apply(concatenar_relatos, axis=1)
                 df = df.drop(columns=campos_relato)
-        
+            
+            # Processa campos de data e hora
+            if 'data_hora' in df.columns:
+                logger.info("=== Processando campos de data e hora ===")
+                logger.info(f"Valor original data_hora (primeiras 5 linhas):")
+                logger.info(df['data_hora'].head())
+                
+                df['datetime_obj'] = pd.to_datetime(df['data_hora'], format='%d/%m/%Y %H:%M:%S')
+                logger.info("Após conversão para datetime_obj:")
+                logger.info(df['datetime_obj'].head())
+                
+                df['data_atendimento'] = df['datetime_obj'].dt.strftime('%Y-%m-%d')
+                df['hora_atendimento'] = df['datetime_obj'].dt.strftime('%H:%M:%S')
+                
+                logger.info("=== Campos processados ===")
+                logger.info("data_atendimento (primeiras 5 linhas):")
+                logger.info(df['data_atendimento'].head().to_list())
+                logger.info("hora_atendimento (primeiras 5 linhas):")
+                logger.info(df['hora_atendimento'].head().to_list())
+                
+                df = df.drop(columns=['datetime_obj'])
+            
             return df
-        
+            
         except Exception as e:
-            logger.error(f"Erro ao concatenar campos de relato: {str(e)}")
+            logger.error(f"Erro ao processar campos: {str(e)}")
             return df
-
-
+            
     def _processar_campos(self, df: pd.DataFrame) -> pd.DataFrame:
         """Processa todos os campos aplicando valores default e validações."""
         try:

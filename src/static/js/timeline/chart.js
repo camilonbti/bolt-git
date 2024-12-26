@@ -1,5 +1,3 @@
-// src/static/js/timeline/chart.js
-
 class TimelineChart {
     constructor() {
         console.info('Inicializando TimelineChart');
@@ -44,11 +42,8 @@ class TimelineChart {
     }
 
     setupEventListeners() {
-        // Escuta eventos de filtro
         document.addEventListener('filterChange', (event) => {
             if (!event.detail) return;
-            
-            // Usa o mesmo padrão dos gráficos de barra
             const filters = event.detail;
             if (window.dashboardManager?.filteredData) {
                 const filteredData = this.applyFilters(
@@ -59,14 +54,12 @@ class TimelineChart {
             }
         });
 
-        // Escuta atualizações do dashboard
         document.addEventListener('dashboardUpdate', (event) => {
             if (event.detail?.registros) {
                 const filters = window.dashboardManager?.filterManager?.getActiveFilters();
                 const filteredData = filters ? 
                     this.applyFilters(event.detail.registros, filters) : 
                     event.detail.registros;
-                    
                 this.update(filteredData);
             }
         });
@@ -82,11 +75,10 @@ class TimelineChart {
                 }
 
                 if (key === 'period') {
-                    const timestamp = parseInt(registro.data_hora);
-                    return timestamp >= value.start && timestamp <= value.end;
+                    const dataAtendimento = registro.data_atendimento;
+                    return dataAtendimento >= value.start && dataAtendimento <= value.end;
                 }
 
-                // Mapeia os campos conforme o padrão usado nos gráficos de barra
                 const fieldMappings = {
                     'status': 'status_atendimento',
                     'tipo': 'tipo_atendimento',
@@ -119,7 +111,6 @@ class TimelineChart {
         try {
             const processedData = window.TimelineUtils.processData(data);
             
-            // Verifica mudanças antes de atualizar
             const currentData = {
                 labels: this.chart.data.labels,
                 values: this.chart.data.datasets[0].data
@@ -146,6 +137,3 @@ class TimelineChart {
         }
     }
 }
-
-// Exporta a classe para uso global
-window.TimelineChart = TimelineChart;

@@ -81,6 +81,32 @@ CAMPOS_CONFIGURACAO = {
         "label": "Data/Hora",
         "visivel": True
     },
+    "Data Atendimento": {
+        "nome_interno": "data_atendimento",
+        "tipo": "date",
+        "obrigatorio": False,  # Será derivado de data_hora
+        "formato": "%Y-%m-%d",
+        "valor_default": None,
+        "permite_filtro": True,
+        "tipo_filtro": "date",
+        "label": "Data",
+        "visivel": True,
+        "campo_origem": "data_hora"  # Indica de onde o valor será derivado
+    },
+    # Novo campo para hora
+    "Hora Atendimento": {
+        "nome_interno": "hora_atendimento", 
+        "tipo": "time",
+        "obrigatorio": False,  # Será derivado de data_hora
+        "formato": "%H:%M:%S",
+        "valor_default": None,
+        "permite_filtro": True,
+        "tipo_filtro": "time",
+        "label": "Hora",
+        "visivel": True,
+        "campo_origem": "data_hora"  # Indica de onde o valor será derivado
+    },
+
     "Prestador de Serviços:": {
         "nome_interno": "funcionario",
         "tipo": "string",

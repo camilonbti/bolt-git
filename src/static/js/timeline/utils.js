@@ -1,10 +1,9 @@
-// Utilitários para manipulação de datas e dados do timeline
 const TimelineUtils = {
-    formatDate(timestamp) {
-        if (!timestamp) return '';
+    formatDate(dateStr) {
+        if (!dateStr) return '';
         
         try {
-            const date = new Date(parseInt(timestamp));
+            const date = new Date(dateStr);
             return date.toLocaleDateString('pt-BR', {
                 day: '2-digit',
                 month: '2-digit',
@@ -21,7 +20,7 @@ const TimelineUtils = {
 
         try {
             const groupedByDate = data.reduce((acc, item) => {
-                if (!item.data_hora) return acc;
+                if (!item.data_atendimento) return acc;
                 const date = new Date(parseInt(item.data_hora));
                 const dateKey = date.setHours(0,0,0,0);
                 acc[dateKey] = (acc[dateKey] || 0) + 1;
