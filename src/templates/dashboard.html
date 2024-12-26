@@ -106,6 +106,21 @@
                 </div>
             </div>
 
+            <!-- Em src/templates/dashboard.html, após o gráfico de timeline existente -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="chart-card">
+                        <h5>Distribuição de Atendimentos por Hora</h5>
+                        <div class="chart-container-father">
+                            <div class="chart-container">
+                                <canvas id="hourlyTimelineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
             <!-- Gráficos -->
             <div class="row g-4 mb-4">
                 <!-- Status dos Atendimentos -->
@@ -272,6 +287,7 @@
     <script src="{{ url_for('static', filename='js/timeline/utils.js') }}"></script>
     <script src="{{ url_for('static', filename='js/timeline/config.js') }}"></script>
     <script src="{{ url_for('static', filename='js/timeline/chart.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/timeline/hourly-chart.js') }}"></script>
 
     <!-- Main application components -->
     <script src="{{ url_for('static', filename='js/data.js') }}"></script>

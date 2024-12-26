@@ -1,4 +1,3 @@
-// Configurações do gráfico de timeline
 const TimelineConfig = {
     getChartOptions() {
         return {
@@ -15,8 +14,16 @@ const TimelineConfig = {
                     padding: 10,
                     displayColors: false,
                     callbacks: {
-                        title: (context) => window.TimelineUtils.formatDate(context[0].label),
-                        label: (context) => `Total de atendimentos: ${context.raw}`
+                        // Corrigindo o callback do título
+                        title: function(tooltipItems) {
+                            if (!tooltipItems || !tooltipItems[0]) return '';
+                            const timestamp = tooltipItems[0].label;
+                            return window.TimelineUtils.formatDate(timestamp);
+                        },
+                        // Corrigindo o callback do label
+                        label: function(context) {
+                            return `Total de atendimentos: ${context.raw || 0}`;
+                        }
                     }
                 }
             },
@@ -25,8 +32,10 @@ const TimelineConfig = {
                     grid: { display: false },
                     ticks: {
                         maxTicksLimit: 10,
-                        callback: (value, index, ticks) => 
-                            window.TimelineUtils.formatDate(ticks.chart.data_atendimento.labels[index])                        
+                        callback: function(value, index, ticks) {
+                            if (!ticks || !ticks.length) return '';
+                            return window.TimelineUtils.formatDate(this.getLabelForValue(value));
+                        }
                     }
                 },
                 y: {
@@ -43,5 +52,4 @@ const TimelineConfig = {
     }
 };
 
-// Exporta para uso global
 window.TimelineConfig = TimelineConfig;

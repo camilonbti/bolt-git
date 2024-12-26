@@ -3,6 +3,7 @@ class DashboardManager {
         console.info('Inicializando DashboardManager');
         this.timezone = 'America/Sao_Paulo';
         this.initialized = false;
+        this.filteredData = null;
         this.initializeComponents();
     }
 
@@ -15,6 +16,8 @@ class DashboardManager {
                 throw new Error('Falha ao carregar dados iniciais');
             }
 
+            await this.waitForDOM();
+            
             // Inicializa componentes
             this.filterManager = new FilterManager();
             this.tableManager = new TableManager();
@@ -30,83 +33,16 @@ class DashboardManager {
             
             this.updater = new DashboardUpdater();
             
-            // Atualiza dados iniciais
-            if (initialData.registros) {
-                this.timelineChart?.update(initialData.registros);
-            }
-            
             this.setupEventListeners();
             this.initialized = true;
             
+            // Aplica filtros iniciais
             const initialFilters = this.filterManager.getActiveFilters();
             this.applyFiltersOnce(initialData.registros, initialFilters);
             
         } catch (error) {
             console.error('Erro ao inicializar componentes:', error);
             this.showError('Erro ao inicializar dashboard');
-        }
-    }
-
-    updateDashboard(data) {
-        if (!data || !this.initialized) {
-            console.error('Dados inválidos ou dashboard não inicializado');
-            return;
-        }
-
-        try {
-            const loadingState = document.getElementById('loadingState');
-            const dashboardContent = document.getElementById('dashboardContent');
-            
-            if (loadingState) loadingState.classList.add('d-none');
-            if (dashboardContent) dashboardContent.classList.remove('d-none');
-
-            // Atualiza componentes
-            this.updateKPIs(data.kpis || {});
-            this.tableManager?.updateTable(data.registros || []);
-            this.chartManager?.updateCharts(data.graficos || {});
-            this.timelineChart?.update(data.registros || []);
-            this.updateTimestamp(data.ultima_atualizacao);
-            
-        } catch (error) {
-            console.error('Erro ao atualizar dashboard:', error);
-            this.showError('Erro ao atualizar dashboard');
-        }
-    }
-
-    // Atualizar o método updateDashboard para incluir a timeline
-    updateDashboard(data) {
-        if (!data || !this.initialized) {
-            console.error('Dados inválidos ou dashboard não inicializado');
-            return;
-        }
-
-        try {
-            const loadingState = document.getElementById('loadingState');
-            const dashboardContent = document.getElementById('dashboardContent');
-            
-            if (loadingState) loadingState.classList.add('d-none');
-            if (dashboardContent) dashboardContent.classList.remove('d-none');
-
-            this.updateKPIs(data.kpis || {});
-            
-            if (this.tableManager) {
-                this.tableManager.updateTable(data.registros || []);
-            }
-            
-            if (this.chartManager) {
-                this.chartManager.updateCharts(data.graficos || {});
-            }
-
-            // Atualiza o gráfico de timeline
-            if (this.timelineChart) {
-                this.timelineChart.update(data.registros || []);
-            }
-            
-            this.updateTimestamp(data.ultima_atualizacao);
-            
-        } catch (error) {
-            console.error('Erro ao atualizar dashboard:', error);
-            this.showError('Erro ao atualizar dashboard');
         }
     }
 
@@ -149,12 +85,13 @@ class DashboardManager {
 
     applyFiltersOnce(registros, filters) {
         if (!registros || !filters) {
-            this.updateDashboard({
+            const emptyData = {
                 registros: [],
                 kpis: this.calculateKPIs([]),
                 graficos: this.calculateCharts([]),
                 ultima_atualizacao: Date.now()
-            });
+            };
+            this.updateDashboard(emptyData);
             return;
         }
 
@@ -203,16 +140,25 @@ class DashboardManager {
             if (loadingState) loadingState.classList.add('d-none');
             if (dashboardContent) dashboardContent.classList.remove('d-none');
 
+            // Atualiza KPIs
             this.updateKPIs(data.kpis || {});
             
+            // Atualiza tabela
             if (this.tableManager) {
                 this.tableManager.updateTable(data.registros || []);
             }
             
+            // Atualiza gráficos de barra
             if (this.chartManager) {
                 this.chartManager.updateCharts(data.graficos || {});
             }
+
+            // Atualiza timeline
+            if (this.timelineChart) {
+                this.timelineChart.update(data.registros || []);
+            }
             
+            // Atualiza timestamp
             this.updateTimestamp(data.ultima_atualizacao);
             
         } catch (error) {
@@ -222,13 +168,16 @@ class DashboardManager {
     }
 
     filterByPeriod(registro, period) {
-        if (!registro.data_atendimento || !period.start || !period.end) {
+        if (!registro.data_hora || !period.start || !period.end) {
             return true;
         }
-    
+
         try {
-            return registro.data_atendimento >= period.start && 
-                   registro.data_atendimento <= period.end;
+            const registroDate = new Date(parseInt(registro.data_hora));
+            const startDate = new Date(period.start);
+            const endDate = new Date(period.end);
+
+            return registroDate >= startDate && registroDate <= endDate;
         } catch (error) {
             console.error('Erro ao filtrar por período:', error);
             return true;
