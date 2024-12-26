@@ -23,13 +23,11 @@ class DashboardManager {
             this.tableManager = new TableManager();
             this.chartManager = new ChartManager(initialData.graficos);
             
-            // Inicializa timeline após garantir que a classe existe
-            if (typeof TimelineChart !== 'undefined') {
-                this.timelineChart = new TimelineChart();
-                console.info('Timeline chart inicializado');
-            } else {
-                console.error('TimelineChart não encontrado');
-            }
+            // Armazena os dados antes de inicializar o timeline
+            this.filteredData = initialData.registros;
+            
+            // Inicializa timeline após ter os dados
+            this.timelineChart = new TimelineChart();
             
             this.updater = new DashboardUpdater();
             

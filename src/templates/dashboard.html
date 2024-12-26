@@ -92,35 +92,6 @@
                 </div>
             </div>
 
-            <!-- Timeline Chart -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="chart-card">
-                        <h5>Timeline de Atendimentos</h5>
-                        <div class="chart-container-father">
-                            <div class="chart-container">
-                                <canvas id="timelineChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Em src/templates/dashboard.html, após o gráfico de timeline existente -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="chart-card">
-                        <h5>Distribuição de Atendimentos por Hora</h5>
-                        <div class="chart-container-father">
-                            <div class="chart-container">
-                                <canvas id="hourlyTimelineChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
             <!-- Gráficos -->
             <div class="row g-4 mb-4">
                 <!-- Status dos Atendimentos -->
@@ -244,6 +215,35 @@
                 </div>
             </div>
 
+            <!-- Timeline Chart DATA -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="chart-card">
+                        <h5>Timeline de Atendimentos</h5>
+                        <div class="chart-container-father">
+                            <div class="chart-container">
+                                <canvas id="timelineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline Chart HORA -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="chart-card">
+                        <h5>Distribuição de Atendimentos por Hora</h5>
+                        <div class="chart-container-father">
+                            <div class="chart-container">
+                                <canvas id="hourlyTimelineChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
             <!-- Tabela -->
             <section class="table-section">
                 <div class="table-header d-flex justify-content-between align-items-center p-3">
@@ -284,12 +284,8 @@
     <script src="{{ url_for('static', filename='js/color-palette.js') }}"></script>
 
     <!-- Timeline components -->
-    <script src="{{ url_for('static', filename='js/timeline/utils.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/timeline/config.js') }}"></script>
     <script src="{{ url_for('static', filename='js/timeline/timeline-chart.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/timeline/chart.js') }}"></script>
-
-
+    
     <!-- Main application components -->
     <script src="{{ url_for('static', filename='js/data.js') }}"></script>
     <script src="{{ url_for('static', filename='js/table.js') }}"></script>
