@@ -3,7 +3,6 @@ class DashboardManager {
         console.info('Inicializando DashboardManager');
         this.timezone = 'America/Sao_Paulo';
         this.initialized = false;
-        this.filteredData = null;
         this.initializeComponents();
     }
 
@@ -16,12 +15,25 @@ class DashboardManager {
                 throw new Error('Falha ao carregar dados iniciais');
             }
 
-            await this.waitForDOM();
-            
+            // Inicializa componentes
             this.filterManager = new FilterManager();
             this.tableManager = new TableManager();
             this.chartManager = new ChartManager(initialData.graficos);
+            
+            // Inicializa timeline após garantir que a classe existe
+            if (typeof TimelineChart !== 'undefined') {
+                this.timelineChart = new TimelineChart();
+                console.info('Timeline chart inicializado');
+            } else {
+                console.error('TimelineChart não encontrado');
+            }
+            
             this.updater = new DashboardUpdater();
+            
+            // Atualiza dados iniciais
+            if (initialData.registros) {
+                this.timelineChart?.update(initialData.registros);
+            }
             
             this.setupEventListeners();
             this.initialized = true;
@@ -32,6 +44,69 @@ class DashboardManager {
         } catch (error) {
             console.error('Erro ao inicializar componentes:', error);
             this.showError('Erro ao inicializar dashboard');
+        }
+    }
+
+    updateDashboard(data) {
+        if (!data || !this.initialized) {
+            console.error('Dados inválidos ou dashboard não inicializado');
+            return;
+        }
+
+        try {
+            const loadingState = document.getElementById('loadingState');
+            const dashboardContent = document.getElementById('dashboardContent');
+            
+            if (loadingState) loadingState.classList.add('d-none');
+            if (dashboardContent) dashboardContent.classList.remove('d-none');
+
+            // Atualiza componentes
+            this.updateKPIs(data.kpis || {});
+            this.tableManager?.updateTable(data.registros || []);
+            this.chartManager?.updateCharts(data.graficos || {});
+            this.timelineChart?.update(data.registros || []);
+            this.updateTimestamp(data.ultima_atualizacao);
+            
+        } catch (error) {
+            console.error('Erro ao atualizar dashboard:', error);
+            this.showError('Erro ao atualizar dashboard');
+        }
+    }
+
+    // Atualizar o método updateDashboard para incluir a timeline
+    updateDashboard(data) {
+        if (!data || !this.initialized) {
+            console.error('Dados inválidos ou dashboard não inicializado');
+            return;
+        }
+
+        try {
+            const loadingState = document.getElementById('loadingState');
+            const dashboardContent = document.getElementById('dashboardContent');
+            
+            if (loadingState) loadingState.classList.add('d-none');
+            if (dashboardContent) dashboardContent.classList.remove('d-none');
+
+            this.updateKPIs(data.kpis || {});
+            
+            if (this.tableManager) {
+                this.tableManager.updateTable(data.registros || []);
+            }
+            
+            if (this.chartManager) {
+                this.chartManager.updateCharts(data.graficos || {});
+            }
+
+            // Atualiza o gráfico de timeline
+            if (this.timelineChart) {
+                this.timelineChart.update(data.registros || []);
+            }
+            
+            this.updateTimestamp(data.ultima_atualizacao);
+            
+        } catch (error) {
+            console.error('Erro ao atualizar dashboard:', error);
+            this.showError('Erro ao atualizar dashboard');
         }
     }
 
