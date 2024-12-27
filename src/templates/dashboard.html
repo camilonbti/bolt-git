@@ -12,6 +12,8 @@
     <link href="{{ url_for('static', filename='css/table.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/charts.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/filters.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/timeline/timeline-charts.css') }}" rel="stylesheet">
+
 </head>
 <body>
     <div class="container-fluid py-4">
@@ -65,32 +67,51 @@
             </section>
 
             <!-- KPIs -->
-            <div class="row g-4 mb-4">
-                <div class="col-md-3">
+            <!-- Substituir a div row g-4 mb-4 existente por: -->
+            <div class="row g-3 mb-4">
+                <div class="col-lg-3 col-md-4 col-6">
                     <div class="kpi-card">
                         <h6>Total de Atendimentos</h6>
                         <p id="totalAtendimentos">0</p>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-4 col-6">
                     <div class="kpi-card">
                         <h6>Atendimentos Pendentes</h6>
                         <p id="totalPendentes">0</p>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-4 col-6">
                     <div class="kpi-card">
                         <h6>Atendimentos Concluídos</h6>
                         <p id="totalConcluidos">0</p>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-4 col-6">
                     <div class="kpi-card">
                         <h6>Taxa de Conclusão</h6>
                         <p id="taxaConclusao">0%</p>
                     </div>
                 </div>
-            </div>
+                <div class="col-lg-3 col-md-4 col-6">
+                    <div class="kpi-card">
+                        <h6>Média Diária</h6>
+                        <p id="mediaDiaria">0</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6">
+                    <div class="kpi-card">
+                        <h6>Atendimentos Manhã</h6>
+                        <p id="atendimentosManha">0%</p>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 col-6">
+                    <div class="kpi-card">
+                        <h6>Atendimentos Tarde</h6>
+                        <p id="atendimentosTarde">0%</p>
+                    </div>
+                </div>
+            </div>        
 
             <!-- Gráficos -->
             <div class="row g-4 mb-4">
@@ -218,12 +239,13 @@
             <!-- Timeline Chart DATA -->
             <div class="row mb-4">
                 <div class="col-12">
-                    <div class="chart-card">
-                        <h5>Timeline de Atendimentos</h5>
-                        <div class="chart-container-father">
-                            <div class="chart-container">
-                                <canvas id="timelineChart"></canvas>
-                            </div>
+                    <div class="timeline-chart-card">
+                        <h5>
+                            <i class="fas fa-chart-line"></i>
+                            Timeline de Atendimentos
+                        </h5>
+                        <div class="timeline-chart-container">
+                            <canvas id="timelineChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -232,12 +254,13 @@
             <!-- Timeline Chart HORA -->
             <div class="row mb-4">
                 <div class="col-12">
-                    <div class="chart-card">
-                        <h5>Distribuição de Atendimentos por Hora</h5>
-                        <div class="chart-container-father">
-                            <div class="chart-container">
-                                <canvas id="hourlyTimelineChart"></canvas>
-                            </div>
+                    <div class="timeline-chart-card">
+                        <h5>
+                            <i class="fas fa-clock"></i>
+                            Distribuição de Atendimentos por Hora
+                        </h5>
+                        <div class="timeline-chart-container">
+                            <canvas id="hourlyTimelineChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -283,10 +306,11 @@
     <script src="{{ url_for('static', filename='js/chart-utils.js') }}"></script>
     <script src="{{ url_for('static', filename='js/color-palette.js') }}"></script>
 
-    <!-- Timeline components -->
-    <script src="{{ url_for('static', filename='js/timeline/timeline-chart.js') }}"></script>
-    
     <!-- Main application components -->
+    <script src="{{ url_for('static', filename='js/timeline/timeline-config.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/timeline/timeline-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/timeline/timeline-chart.js') }}"></script>
+
     <script src="{{ url_for('static', filename='js/data.js') }}"></script>
     <script src="{{ url_for('static', filename='js/table.js') }}"></script>
     <script src="{{ url_for('static', filename='js/charts.js') }}"></script>

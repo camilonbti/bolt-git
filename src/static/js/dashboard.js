@@ -206,20 +206,50 @@ class DashboardManager {
                 total_registros: 0,
                 total_pendentes: 0,
                 total_concluidos: 0,
-                taxa_conclusao: 0
+                taxa_conclusao: 0,
+                media_diaria: 0,
+                atendimentos_manha: 0,
+                atendimentos_tarde: 0
             };
         }
-
+    
+        // Cálculos existentes
         const total = data.length;
         const concluidos = data.filter(r => r.status_atendimento === 'Concluído').length;
         const pendentes = data.filter(r => r.status_atendimento === 'Pendente').length;
         const taxa = (concluidos / total) * 100;
-
+    
+        // Novos cálculos
+        // 1. Média diária
+        const diasUnicos = new Set(data.map(r => r.data_atendimento)).size;
+        const mediaDiaria = diasUnicos > 0 ? total / diasUnicos : 0;
+    
+        // 2. Distribuição por período
+        const atendimentosPorPeriodo = data.reduce((acc, item) => {
+            if (item.hora_atendimento) {
+                const hora = parseInt(item.hora_atendimento.split(':')[0]);
+                if (!isNaN(hora)) {
+                    if (hora < 12) {
+                        acc.manha++;
+                    } else {
+                        acc.tarde++;
+                    }
+                }
+            }
+            return acc;
+        }, { manha: 0, tarde: 0 });
+    
+        const percentualManha = (atendimentosPorPeriodo.manha / total) * 100;
+        const percentualTarde = (atendimentosPorPeriodo.tarde / total) * 100;
+    
         return {
             total_registros: total,
             total_pendentes: pendentes,
             total_concluidos: concluidos,
-            taxa_conclusao: parseFloat(taxa.toFixed(1))
+            taxa_conclusao: parseFloat(taxa.toFixed(1)),
+            media_diaria: parseFloat(mediaDiaria.toFixed(1)),
+            atendimentos_manha: parseFloat(percentualManha.toFixed(1)),
+            atendimentos_tarde: parseFloat(percentualTarde.toFixed(1))
         };
     }
 
@@ -277,13 +307,16 @@ class DashboardManager {
             totalAtendimentos: document.getElementById('totalAtendimentos'),
             totalPendentes: document.getElementById('totalPendentes'),
             totalConcluidos: document.getElementById('totalConcluidos'),
-            taxaConclusao: document.getElementById('taxaConclusao')
+            taxaConclusao: document.getElementById('taxaConclusao'),
+            mediaDiaria: document.getElementById('mediaDiaria'),
+            atendimentosManha: document.getElementById('atendimentosManha'),
+            atendimentosTarde: document.getElementById('atendimentosTarde')
         };
-
+    
         try {
             Object.entries(elements).forEach(([key, element]) => {
                 if (!element) return;
-
+    
                 let value = 0;
                 switch (key) {
                     case 'totalAtendimentos':
@@ -298,12 +331,21 @@ class DashboardManager {
                     case 'taxaConclusao':
                         value = kpis.taxa_conclusao || 0;
                         break;
+                    case 'mediaDiaria':
+                        value = kpis.media_diaria || 0;
+                        break;
+                    case 'atendimentosManha':
+                        value = kpis.atendimentos_manha || 0;
+                        break;
+                    case 'atendimentosTarde':
+                        value = kpis.atendimentos_tarde || 0;
+                        break;
                 }
-
-                const formattedValue = key === 'taxaConclusao' 
+    
+                const formattedValue = ['taxaConclusao', 'atendimentosManha', 'atendimentosTarde'].includes(key)
                     ? `${this.formatNumber(value, 1)}%`
-                    : this.formatNumber(value);
-
+                    : this.formatNumber(value, 1);
+    
                 this.animateValue(element, 
                     parseFloat(element.textContent.replace(/[^0-9.-]+/g, '') || 0), 
                     value);

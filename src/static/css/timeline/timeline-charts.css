@@ -1,0 +1,90 @@
+/* Estilos específicos para gráficos de linha temporal */
+.timeline-chart-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.15rem 1.75rem rgba(58, 59, 69, 0.15);
+    margin-bottom: 1.5rem;
+    transition: transform 0.2s ease;
+}
+
+.timeline-chart-card:hover {
+    transform: translateY(-3px);
+}
+
+.timeline-chart-card h5 {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.timeline-chart-card h5 i {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+.timeline-chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+/* Estilização específica para pontos do gráfico */
+.timeline-chart-container canvas {
+    cursor: pointer;
+}
+
+/* Tooltip personalizado para timeline */
+.timeline-tooltip {
+    background: rgba(0, 0, 0, 0.85) !important;
+    border-radius: 4px !important;
+    padding: 8px 12px !important;
+    color: white !important;
+    font-size: 12px !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+}
+
+.timeline-tooltip-title {
+    font-weight: 600 !important;
+    margin-bottom: 4px !important;
+    color: #fff !important;
+}
+
+.timeline-tooltip-body {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Animação de entrada */
+@keyframes timelineChartFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.timeline-chart-container canvas {
+    animation: timelineChartFadeIn 0.5s ease-out;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .timeline-chart-card {
+        margin-bottom: 1rem;
+    }
+    
+    .timeline-chart-container {
+        height: 250px;
+    }
+    
+    .timeline-chart-card h5 {
+        font-size: 1rem;
+    }
+}
