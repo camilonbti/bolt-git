@@ -33,6 +33,8 @@ GOOGLE_SHEETS_CONFIG = {
     "batch_size": int(os.getenv('GOOGLE_SHEETS_BATCH_SIZE', 1000))
 }
 
+print(f"Chave da API: {os.getenv('GOOGLE_CREDENTIALS_PATH')}")
+
 def get_timezone():
     """Retorna o timezone configurado."""
     return GOOGLE_SHEETS_CONFIG["timezone"]
