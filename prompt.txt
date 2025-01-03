@@ -1,0 +1,10 @@
+analise o projeto
+me responta em pt-br
+no projeto a finalidade é um dashboard de atendimentos
+é feita uma autenticação no google, lida a planila e criado um dataset usando o mapeamento de campos
+dessa forma com os dados da planilha temos um dataset js a ser usado no html
+os filtros são um ponto importante, temos uma espécie de array, uma lista de filtros, dessa formao usuario pode
+incluir mais de um filtro, como exemplo o filtro da data inicial e final é obrigatório e está fixo, o usuario
+consegue alterar as datas, mais não consegue remover esse filtro que é obrigatório.
+internamente temos dois campos extraidos do campo ddata_hora do mapeamento, esse campo é timestamp e desse
+estraimos os campos data_atendimento que é apenas a data e o campo hora_atendimento que é a hora do atendimento
